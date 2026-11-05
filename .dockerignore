@@ -1,0 +1,10 @@
+.git
+.idea
+.env
+vendor
+node_modules
+docker-compose.yaml
+storage/logs/*
+storage/framework/cache/*
+storage/framework/views/*
+bootstrap/cache/*.php

@@ -1,0 +1,62 @@
+services:
+  web:
+    build: docker/nginx
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    environment:
+      # Fixed on purpose: a developer's local .env (APP_ENV=local, APP_DEBUG=true) must not leak into the container.
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_KEY: ${APP_KEY:-}
+      LOG_CHANNEL: stderr
+      CACHE_STORE: file
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-asset_register}
+      DB_USERNAME: ${DB_USERNAME:-asset_register}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DOCS_USERNAME: ${DOCS_USERNAME:-docs}
+      DOCS_PASSWORD: ${DOCS_PASSWORD:-change-me}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/app-ready"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+      start_period: 5s
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-asset_register}
+      MYSQL_USER: ${DB_USERNAME:-asset_register}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root-secret}
+    ports:
+      # For database tools such as DBeaver. Bound to localhost only; change the host port with DB_HOST_PORT.
+      - "127.0.0.1:${DB_HOST_PORT:-3306}:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  db-data:

@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: Asset Register API
+  version: 1.0.0
+  description: |
+    REST API of the asset register: **devices**, **contracts** and the devices placed on contracts.
+
+    ### Domain model
+    * A **device** is a device type of the register (e.g. *Dell Latitude 5440*).
+    * A **contract** holds any number of devices, and the same device type may be on many contracts (N:N).
+    * Every unit placed on a contract carries its own **serial number**. A physical unit
+      (device + serial number) can be placed on one contract only.
+    * A device that is placed on a contract cannot be deleted; deleting a contract releases its devices.
+
+    ### Conventions
+    * All bodies are JSON (`Content-Type: application/json`). Identifiers are UUIDs, dates are `YYYY-MM-DD`.
+    * Single resources are wrapped in `data`; lists are paginated (`page`, `per_page`) and carry a `meta` object.
+    * `PUT` replaces the whole resource.
+    * Every response carries an `X-Request-Id` header (a client supplied one is honoured); the same id is stored
+      in the API traffic log and returned in error bodies.
+    * All errors share one envelope, see the `Error` schema. Codes are stable and machine readable.
+servers:
+  - url: /api/v1
+    description: This server
+tags:
+  - name: Devices
+  - name: Contracts
+  - name: Contract devices
+paths:
+  /devices:
+    get:
+      tags: [Devices]
+      operationId: listDevices
+      summary: List devices
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: A page of devices, ordered by name.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Device' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      tags: [Devices]
+      operationId: createDevice
+      summary: Create a device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceInput' }
+      responses:
+        '201':
+          description: The device was created.
+          headers:
+            Location:
+              description: URL of the new device.
+              schema: { type: string }
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Device' }
+        '409':
+          description: A device with the same manufacturer and model already exists (`device_already_exists`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /devices/{device}:
+    parameters:
+      - $ref: '#/components/parameters/DeviceId'
+    get:
+      tags: [Devices]
+      operationId: getDevice
+      summary: Get a device
+      responses:
+        '200':
+          description: The device.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Device' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Devices]
+      operationId: updateDevice
+      summary: Replace a device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceInput' }
+      responses:
+        '200':
+          description: The updated device.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Device' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Another device with the same manufacturer and model already exists (`device_already_exists`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [Devices]
+      operationId: deleteDevice
+      summary: Delete a device
+      responses:
+        '204':
+          description: The device was deleted.
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The device is placed on at least one contract (`device_in_use`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /contracts:
+    get:
+      tags: [Contracts]
+      operationId: listContracts
+      summary: List contracts
+      description: The listing contains contract data only; the devices of a contract are returned by `GET /contracts/{contract}`.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: A page of contracts.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Contract' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      tags: [Contracts]
+      operationId: createContract
+      summary: Create a contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContractInput' }
+      responses:
+        '201':
+          description: The contract was created.
+          headers:
+            Location:
+              description: URL of the new contract.
+              schema: { type: string }
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/ContractDetails' }
+        '409':
+          description: The contract number is already taken (`contract_number_already_exists`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: Validation failed (`validation_failed`) or the period is invalid (`invalid_contract_period`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /contracts/{contract}:
+    parameters:
+      - $ref: '#/components/parameters/ContractId'
+    get:
+      tags: [Contracts]
+      operationId: getContract
+      summary: Get a contract with its devices
+      responses:
+        '200':
+          description: The contract including the devices placed on it.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/ContractDetails' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Contracts]
+      operationId: updateContract
+      summary: Replace a contract
+      description: Replaces the contract data. The devices placed on the contract are managed through `/contracts/{contract}/devices`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContractInput' }
+      responses:
+        '200':
+          description: The updated contract including its devices.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/ContractDetails' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The contract number is already taken (`contract_number_already_exists`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: Validation failed (`validation_failed`) or the period is invalid (`invalid_contract_period`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      tags: [Contracts]
+      operationId: deleteContract
+      summary: Delete a contract
+      description: Deleting a contract also releases the devices placed on it.
+      responses:
+        '204':
+          description: The contract was deleted.
+        '404': { $ref: '#/components/responses/NotFound' }
+  /contracts/{contract}/devices:
+    parameters:
+      - $ref: '#/components/parameters/ContractId'
+    post:
+      tags: [Contract devices]
+      operationId: attachDevice
+      summary: Place a device on a contract
+      description: |
+        Places one unit of a device (type) on the contract. The `(device_id, serial_number)` pair must not be
+        placed on any contract yet.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttachDeviceInput' }
+      responses:
+        '201':
+          description: The device was placed; the response is the contract including its devices.
+          headers:
+            Location:
+              description: URL of the contract.
+              schema: { type: string }
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/ContractDetails' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The unit is already placed on a contract (`serial_number_already_assigned`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: Validation failed (`validation_failed`) or the device does not exist (`device_not_found`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /contracts/{contract}/devices/{assignment}:
+    parameters:
+      - $ref: '#/components/parameters/ContractId'
+      - name: assignment
+        in: path
+        required: true
+        description: The `assignment_id` of the placed unit, as returned in the `devices` of the contract.
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Contract devices]
+      operationId: detachDevice
+      summary: Take a device off a contract
+      responses:
+        '204':
+          description: The unit was taken off the contract.
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  parameters:
+    DeviceId:
+      name: device
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ContractId:
+      name: contract
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 15 }
+  headers:
+    RequestId:
+      description: Correlation id of the call; also stored in the API traffic log.
+      schema: { type: string }
+  responses:
+    NotFound:
+      description: The resource does not exist (`not_found`, `contract_not_found`, `device_not_found`, `contract_device_not_found`).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error:
+              code: contract_not_found
+              message: Contract 0199c0de-0000-7000-8000-000000000000 was not found.
+              request_id: 0199c0de-1111-7000-8000-000000000000
+    ValidationFailed:
+      description: The request is invalid (`validation_failed`); `details` lists the failing fields.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error:
+              code: validation_failed
+              message: The given data was invalid.
+              details:
+                name: ['The name field is required.']
+              request_id: 0199c0de-1111-7000-8000-000000000000
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable machine readable error code.
+              example: validation_failed
+            message:
+              type: string
+              description: Human readable description.
+            details:
+              type: object
+              description: Field level problems, present when there are any.
+              additionalProperties:
+                type: array
+                items: { type: string }
+            request_id:
+              type: string
+              description: Matches the `X-Request-Id` response header.
+    PageMeta:
+      type: object
+      required: [page, per_page, total, last_page]
+      properties:
+        page: { type: integer, example: 1 }
+        per_page: { type: integer, example: 15 }
+        total: { type: integer, example: 42 }
+        last_page: { type: integer, example: 3 }
+    DeviceInput:
+      type: object
+      required: [name, manufacturer, model]
+      properties:
+        name: { type: string, maxLength: 255, example: Latitude 5440 }
+        manufacturer: { type: string, maxLength: 255, example: Dell }
+        model: { type: string, maxLength: 255, example: '5440' }
+        description: { type: string, maxLength: 2000, nullable: true }
+    Device:
+      allOf:
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
+        - $ref: '#/components/schemas/DeviceInput'
+    ContractInput:
+      type: object
+      required: [contract_number, partner_name, starts_on]
+      properties:
+        contract_number: { type: string, maxLength: 64, example: SZ-2026-001 }
+        partner_name: { type: string, maxLength: 255, example: Happy Gastro Kft. }
+        starts_on: { type: string, format: date, example: '2026-01-01' }
+        ends_on:
+          type: string
+          format: date
+          nullable: true
+          description: Open ended when empty. Must not precede `starts_on`.
+          example: '2026-12-31'
+        notes: { type: string, maxLength: 2000, nullable: true }
+    Contract:
+      allOf:
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
+        - $ref: '#/components/schemas/ContractInput'
+    AssignedDevice:
+      type: object
+      required: [assignment_id, serial_number, device]
+      properties:
+        assignment_id:
+          type: string
+          format: uuid
+          description: Identifies this placement; use it to take the unit off the contract.
+        serial_number: { type: string, maxLength: 100, example: SN-0001 }
+        device: { $ref: '#/components/schemas/Device' }
+    ContractDetails:
+      allOf:
+        - $ref: '#/components/schemas/Contract'
+        - type: object
+          required: [devices]
+          properties:
+            devices:
+              type: array
+              items: { $ref: '#/components/schemas/AssignedDevice' }
+    AttachDeviceInput:
+      type: object
+      required: [device_id, serial_number]
+      properties:
+        device_id: { type: string, format: uuid }
+        serial_number: { type: string, maxLength: 100, example: SN-0001 }

@@ -1,0 +1,1236 @@
+{
+  "info": {
+    "name": "Asset Register API",
+    "description": "Every endpoint of the Asset Register API with tests.\n\nRun the whole collection top to bottom (Collection Runner / `newman run`): requests store `deviceId`, `contractId` and `assignmentId` in collection variables and the last step cleans up.\n\nVariables: `baseUrl` (default http://localhost:8080), `docsUser` / `docsPassword` (documentation Basic auth).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Devices",
+      "item": [
+        {
+          "name": "Create device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Latitude 5440\",\n  \"manufacturer\": \"Dell\",\n  \"model\": \"{{deviceModel}}\",\n  \"description\": \"Business laptop\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a device (type). `manufacturer` + `model` must be unique. Stores `deviceId` for the following requests."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"deviceModel\", \"M-\" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"X-Request-Id header is present\", () => pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.be.a(\"string\").and.not.empty);",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Location header points to the new device\", () => pm.expect(pm.response.headers.get(\"Location\")).to.include(json.data.id));",
+                  "pm.test(\"Body contains the device\", () => pm.expect(json.data).to.include.keys(\"id\", \"name\", \"manufacturer\", \"model\", \"description\"));",
+                  "pm.collectionVariables.set(\"deviceId\", json.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List devices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices?page=1&per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Paginated list ordered by name. `per_page` is 1-100 (default 15)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Has data array and pagination meta\", () => {",
+                  "  pm.expect(json.data).to.be.an(\"array\");",
+                  "  pm.expect(json.meta).to.include.keys(\"page\", \"per_page\", \"total\", \"last_page\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get device",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices/{{deviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns the requested device\", () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get(\"deviceId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update device (PUT, full replacement)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices/{{deviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Latitude 5440 (renamed)\",\n  \"manufacturer\": \"Dell\",\n  \"model\": \"{{deviceModel}}\",\n  \"description\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Replaces all fields of the device."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Name was updated\", () => pm.expect(pm.response.json().data.name).to.eql(\"Latitude 5440 (renamed)\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Contracts",
+      "item": [
+        {
+          "name": "Create contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_number\": \"{{contractNumber}}\",\n  \"partner_name\": \"Happy Gastro Kft.\",\n  \"starts_on\": \"2026-01-01\",\n  \"ends_on\": \"2026-12-31\",\n  \"notes\": \"Framework contract\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a contract. `contract_number` must be unique, `ends_on` is optional (open ended) and must not precede `starts_on`. Stores `contractId`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"contractNumber\", \"SZ-\" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"X-Request-Id header is present\", () => pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.be.a(\"string\").and.not.empty);",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Starts without devices\", () => pm.expect(json.data.devices).to.eql([]));",
+                  "pm.collectionVariables.set(\"contractId\", json.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List contracts (without devices)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts?page=1&per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Contract data only: the listing intentionally has no `devices`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Paginated\", () => pm.expect(json.meta).to.include.keys(\"page\", \"per_page\", \"total\", \"last_page\"));",
+                  "pm.test(\"Items do not contain devices\", () => json.data.forEach(c => pm.expect(c).to.not.have.property(\"devices\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get contract (with devices)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}"
+              ]
+            },
+            "description": "A single contract includes the devices placed on it (`assignment_id`, `serial_number`, `device`)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has devices array\", () => pm.expect(pm.response.json().data.devices).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update contract (PUT, full replacement)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_number\": \"{{contractNumber}}\",\n  \"partner_name\": \"Happy Gastro Kft. (renewed)\",\n  \"starts_on\": \"2026-01-01\",\n  \"ends_on\": null,\n  \"notes\": \"Now open ended\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Replaces the contract data; the devices on the contract are kept."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Updated and now open ended\", () => { pm.expect(d.partner_name).to.include(\"renewed\"); pm.expect(d.ends_on).to.be.null; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Contract devices",
+      "item": [
+        {
+          "name": "Place device on contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"{{deviceId}}\",\n  \"serial_number\": \"{{serialNumber}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Places one unit of the device on the contract. The pair (`device_id`, `serial_number`) can be on one contract only. Responds with the contract including its devices and stores `assignmentId`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"serialNumber\", \"SN-\" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"X-Request-Id header is present\", () => pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.be.a(\"string\").and.not.empty);",
+                  "",
+                  "const unit = pm.response.json().data.devices.find(d => d.serial_number === pm.collectionVariables.get(\"serialNumber\"));",
+                  "pm.test(\"Unit is listed on the contract\", () => pm.expect(unit).to.not.be.undefined);",
+                  "pm.collectionVariables.set(\"assignmentId\", unit.assignment_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place the same unit again (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"{{deviceId}}\",\n  \"serial_number\": \"{{serialNumber}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Expected failure: this unit is already placed on a contract."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope has code \\\"serial_number_already_assigned\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"serial_number_already_assigned\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place unknown device (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"0199c0de-0000-7000-8000-000000000000\",\n  \"serial_number\": \"SN-X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Expected failure: the referenced device does not exist (a business error, not a 404, because the contract exists)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope has code \\\"device_not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"device_not_found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get contract (now with the device)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const devices = pm.response.json().data.devices;",
+                  "pm.test(\"Contains the placed unit\", () => pm.expect(devices.map(d => d.assignment_id)).to.include(pm.collectionVariables.get(\"assignmentId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete device while placed (409)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices/{{deviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}"
+              ]
+            },
+            "description": "Expected failure: a device that is placed on a contract cannot be deleted."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope has code \\\"device_in_use\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"device_in_use\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Take device off contract",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}/devices/{{assignmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}",
+                "devices",
+                "{{assignmentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body\", () => pm.expect(pm.response.text()).to.eql(\"\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Cleanup (delete)",
+      "item": [
+        {
+          "name": "Delete contract",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/{{contractId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "{{contractId}}"
+              ]
+            },
+            "description": "Deleting a contract also releases the devices placed on it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete device",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices/{{deviceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}"
+              ]
+            },
+            "description": "Only possible while the device is not placed on any contract."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Documentation & health",
+      "item": [
+        {
+          "name": "OpenAPI UI (Swagger)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs"
+              ]
+            },
+            "description": "Interactive documentation, protected by HTTP Basic auth (`docsUser` / `docsPassword`).",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{docsUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{docsPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Serves the Swagger UI page\", () => pm.expect(pm.response.text()).to.include(\"swagger-ui\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OpenAPI document (YAML)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/docs/openapi.yaml",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs",
+                "openapi.yaml"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{docsUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{docsPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Is the OpenAPI document\", () => pm.expect(pm.response.text()).to.match(/^openapi: 3\\./));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documentation without credentials (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/docs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "docs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Asks for Basic auth\", () => pm.expect(pm.response.headers.get(\"WWW-Authenticate\")).to.include(\"Basic\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/up",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "up"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Error examples",
+      "item": [
+        {
+          "name": "Validation error (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Missing/invalid fields produce `validation_failed` with field level `details`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope has code \\\"validation_failed\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));",
+                  "pm.test(\"Lists failing fields\", () => pm.expect(pm.response.json().error.details).to.include.keys(\"name\", \"manufacturer\", \"model\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown device (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices/0199c0de-0000-7000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "0199c0de-0000-7000-8000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope has code \\\"device_not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"device_not_found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown contract (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts/0199c0de-0000-7000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts",
+                "0199c0de-0000-7000-8000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope has code \\\"contract_not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"contract_not_found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown route (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/nothing-here",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "nothing-here"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope has code \\\"not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"not_found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Method not allowed (405)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/devices/0199c0de-0000-7000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "0199c0de-0000-7000-8000-000000000000"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Updates are `PUT` (full replacement); `PATCH` is not supported."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 405\", () => pm.response.to.have.status(405));",
+                  "pm.test(\"Error envelope has code \\\"method_not_allowed\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"method_not_allowed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contract ends before it starts (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_number\": \"BAD-PERIOD\",\n  \"partner_name\": \"Partner\",\n  \"starts_on\": \"2026-06-01\",\n  \"ends_on\": \"2026-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope has code \\\"invalid_contract_period\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"invalid_contract_period\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "docsUser",
+      "value": "docs"
+    },
+    {
+      "key": "docsPassword",
+      "value": "change-me"
+    },
+    {
+      "key": "deviceId",
+      "value": ""
+    },
+    {
+      "key": "contractId",
+      "value": ""
+    },
+    {
+      "key": "assignmentId",
+      "value": ""
+    },
+    {
+      "key": "deviceModel",
+      "value": ""
+    },
+    {
+      "key": "contractNumber",
+      "value": ""
+    },
+    {
+      "key": "serialNumber",
+      "value": ""
+    }
+  ]
+}
