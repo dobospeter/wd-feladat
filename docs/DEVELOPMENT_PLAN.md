@@ -59,7 +59,7 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 | 5 | API traffic log (middleware, sanitiser, repository) | ✅ |
 | 6 | OpenAPI document, Basic-auth docs UI, drift test | ✅ |
 | 7 | Docker: nginx + app + MySQL, healthchecks, migrate on start | ✅ |
-| 8 | Test suite (112 tests), Pint, safety guard against non-SQLite test DB | ✅ |
+| 8 | Test suite (113 tests), Pint, safety guard against non-SQLite test DB | ✅ |
 | 9 | Postman collection (26 requests, 55 assertions), public README page, DBeaver access | ✅ |
 
 ## 5. Quality gates (definition of done)
@@ -68,14 +68,14 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 vendor/bin/pint --test                        # code style
 vendor/bin/phpstan analyse                    # static analysis (Larastan)
 composer check                                # lint + analyse + test in one go
-php artisan test                              # 112 tests
+php artisan test                              # 113 tests
 composer validate --strict
 composer dump-autoload -o --strict-psr        # PSR-4
 composer audit                                # known vulnerabilities
 npx newman run docs/postman/asset-register.postman_collection.json   # against a running stack
 ```
 
-Last run (2026-11-04): all pass. 112 tests / 630 assertions, no known vulnerabilities, 35 Postman requests /
+Last run (2026-11-04): all pass. 113 tests / 639 assertions, no known vulnerabilities, 35 Postman requests /
 76 assertions on MySQL, including from a fresh copy of the repository without `.env` and `vendor/`.
 
 ## 6. Audit - what is still missing

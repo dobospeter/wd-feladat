@@ -17,9 +17,22 @@ class ReadmeTest extends TestCase
         $this->get('/readme')
             ->assertOk()
             ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
-            ->assertSee('<h1>Asset Register API</h1>', false)
+            ->assertSee('<h1 id="asset-register-api">Asset Register API</h1>', false)
             ->assertSee('<table>', false)
             ->assertSee('href="/docs"', false);
+    }
+
+    public function testHeadingsGetIdsSoInternalLinksWork(): void
+    {
+        $html = $this->get('/readme')->assertOk()->getContent();
+
+        $this->assertStringContainsString('id="demo-data-seeder"', $html);
+        $this->assertStringContainsString('id="option-b-local-php"', $html);
+
+        preg_match_all('/\]\(#([a-z0-9-]+)\)/', (string) file_get_contents(base_path('README.md')), $links);
+        foreach (array_unique($links[1]) as $anchor) {
+            $this->assertStringContainsString('id="' . $anchor . '"', $html, "README links to #{$anchor}");
+        }
     }
 
     public function testTheRootUrlLeadsToTheReadme(): void
