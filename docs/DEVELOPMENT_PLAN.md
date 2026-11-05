@@ -27,7 +27,7 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 | 11 | Supported PHP, ideally 8.5 | `^8.5`, container 8.5.12 | `docker compose exec app php -v` |
 | 12 | MySQL | MySQL 8.4 | full suite of requests run against it |
 | 13 | Clean code (SOLID, DRY), DDD | Api / Modules / Core layers, handlers with payloads and results, shared `PaginatedCollection` | review, see §3 |
-| 14 | PSR-4 and PSR-12 | Pint (`pint.json`, Laravel preset, PSR-12 based) and PHPStan + Larastan, both enforced by the pre-commit hook; `composer dump-autoload --strict-psr` | PSR-4 clean; PSR-12 clean under PHP_CodeSniffer except one sniff on the 5 migrations (see §10) |
+| 14 | PSR-4 and PSR-12 | Pint (`pint.json`, Laravel preset, PSR-12 based) and PHPStan + Larastan, both enforced by the pre-commit hook; `composer dump-autoload --strict-psr` | PSR-4 and PSR-12 clean (PHP_CodeSniffer, no exceptions) |
 | 15 | Docker package (`docker-compose.yaml`) | nginx + PHP-FPM app + MySQL, self-contained images | fresh-copy build and run (§6) |
 | 16 | Project can be built from migrations | 4 migrations, applied on container start | fresh MySQL volume; rollback/re-apply round trip |
 
@@ -142,12 +142,14 @@ This is a breaking API change (`partner_name` is gone), made before any release:
 Checked with independent tools, not just Pint: `composer dump-autoload --strict-psr` (PSR-4), PHP_CodeSniffer
 `--standard=PSR12` (PSR-1/PSR-12) and `jscpd` (duplication).
 
-* **PSR-4:** clean.
-* **PSR-12:** the 42 soft line-length warnings and a missing blank line after a trait `use` were fixed. One finding is
-  left: `PSR12.Classes.AnonClassDeclaration` on the 5 migrations. The cause is the `pint.json` rule
-  `new_with_parentheses.anonymous_class: true`, which rewrites `new class () extends Migration` to `new class()`; PSR-12
-  wants `new class ()` or plain `new class extends Migration`. Named migration classes are not an option (PSR-1 requires a
-  namespace and Laravel cannot load namespaced named migrations). Fix: set `anonymous_class` to `false` in `pint.json`.
+* **PSR-4:** clean. PHP_CodeSniffer (`phpcs.xml.dist`, `composer cs`) is now part of `composer check` and of the pre-commit hook.
+* **PSR-12:** the 42 soft line-length warnings and a missing blank line after a trait `use` were fixed. One conflict
+  remained: `pint.json` had `new_with_parentheses.anonymous_class: true`, which rewrote `new class () extends Migration`
+  to `new class()`, rejected by `PSR12.Classes.AnonClassDeclaration`. Resolved by setting `anonymous_class` to `false`
+  (Pint now writes `new class extends Migration`); `phpcs.xml.dist` has no exclusions. Named migration classes were
+  rejected (PSR-1 requires a namespace and Laravel cannot load namespaced named migrations).
+* **Line length:** 120 characters, enforced as an error by PHP_CodeSniffer (`Generic.Files.LineLength` in
+  `phpcs.xml.dist`) and mirrored by `max_line_length` in `.editorconfig`; Pint does not check it.
 * **DRY:** `jscpd` finds 4% duplicated lines (18 clones of 7 to 11 lines), all CRUD boilerplate repeated across modules.
   The one real duplicate (three list handlers mapping a paginator) now lives in `Page::fromPaginator()`. Possible next
   step: a shared base for the Device/Party repositories.

@@ -25,11 +25,10 @@ class Party extends Model
     use HasFactory;
     use HasUuids;
 
-    public const NAME_MAX = 255;
-    public const TAX_NUMBER_MAX = 32;
-    public const ADDRESS_MAX = 500;
-    public const EMAIL_MAX = 255;
-    public const PHONE_MAX = 50;
-
+    public const int NAME_MAX = 255;
+    public const int TAX_NUMBER_MAX = 32;
+    public const int ADDRESS_MAX = 500;
+    public const int EMAIL_MAX = 255;
+    public const int PHONE_MAX = 50;
     protected $fillable = ['name', 'tax_number', 'address', 'email', 'phone'];
 }

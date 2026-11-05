@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Resources;
 
+use Override;
 use Illuminate\Http\Request;
 use App\Api\Party\Resources\PartyResource;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,6 +18,7 @@ final class ContractResource extends JsonResource
     /**
      * @return array<string, mixed>
      */
+    #[Override]
     public function toArray(Request $request): array
     {
         return self::contractFields($this->resource);

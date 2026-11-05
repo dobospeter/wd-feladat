@@ -9,10 +9,9 @@ use Illuminate\Container\Attributes\Config;
 
 final readonly class PayloadSanitizer
 {
-    public const REDACTED = '[REDACTED]';
-    public const BINARY_PLACEHOLDER = '[non-text body omitted]';
-    public const TRUNCATION_MARKER = '...[truncated]';
-
+    public const string REDACTED = '[REDACTED]';
+    public const string BINARY_PLACEHOLDER = '[non-text body omitted]';
+    public const string TRUNCATION_MARKER = '...[truncated]';
     /** @var list<string> */
     private array $redactedHeaders;
 

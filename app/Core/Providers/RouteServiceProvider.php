@@ -12,7 +12,7 @@ use Illuminate\Support\ServiceProvider;
  */
 final class RouteServiceProvider extends ServiceProvider
 {
-    private const DOCUMENTATION_MODULES = ['Docs'];
+    private const array DOCUMENTATION_MODULES = ['Docs'];
 
     public function boot(): void
     {

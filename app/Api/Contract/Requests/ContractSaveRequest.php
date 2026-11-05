@@ -14,7 +14,7 @@ use App\Modules\Contract\Handlers\Payloads\ContractUpdatePayload;
 /** The ends_on >= starts_on rule is enforced by ContractPeriod, not duplicated here. */
 final class ContractSaveRequest extends ApiRequest
 {
-    private const DATE_FORMAT = 'Y-m-d';
+    private const string DATE_FORMAT = 'Y-m-d';
 
     /**
      * @return array<string, list<string>>

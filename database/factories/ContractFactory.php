@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use Override;
 use Illuminate\Support\Carbon;
 use App\Modules\Party\Models\Party;
 use App\Modules\Contract\Models\Contract;
@@ -20,6 +21,7 @@ final class ContractFactory extends Factory
     /**
      * @return array<string, mixed>
      */
+    #[Override]
     public function definition(): array
     {
         $startsOn = Carbon::instance($this->faker->dateTimeBetween('-1 year', '+1 month'));

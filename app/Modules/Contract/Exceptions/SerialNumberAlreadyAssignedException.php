@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Contract\Exceptions;
 
+use Override;
 use App\Core\Exceptions\ConflictException;
 
 final class SerialNumberAlreadyAssignedException extends ConflictException
@@ -15,6 +16,7 @@ final class SerialNumberAlreadyAssignedException extends ConflictException
         );
     }
 
+    #[Override]
     public function errorCode(): string
     {
         return 'serial_number_already_assigned';

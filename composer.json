@@ -22,6 +22,7 @@
         "nunomaduro/collision": "^8.6",
         "phpstan/extension-installer": "^1.4",
         "phpunit/phpunit": "^12.5.12",
+        "squizlabs/php_codesniffer": "^4.0",
         "symfony/yaml": "^8.0"
     },
     "autoload": {
@@ -60,12 +61,14 @@
         "analyse": "phpstan analyse --memory-limit=1G",
         "check": [
             "@lint",
+            "@cs",
             "@analyse",
             "@test"
         ],
         "post-install-cmd": [
             "@hooks"
-        ]
+        ],
+        "cs": "phpcs"
     },
     "extra": {
         "laravel": {

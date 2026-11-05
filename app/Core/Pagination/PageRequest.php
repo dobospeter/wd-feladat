@@ -8,8 +8,8 @@ use App\Core\Exceptions\InvalidValueException;
 
 final readonly class PageRequest
 {
-    public const DEFAULT_PER_PAGE = 15;
-    public const MAX_PER_PAGE = 100;
+    public const int DEFAULT_PER_PAGE = 15;
+    public const int MAX_PER_PAGE = 100;
 
     public function __construct(
         public int $page = 1,

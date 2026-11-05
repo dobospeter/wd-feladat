@@ -16,7 +16,7 @@ use App\Modules\ApiLog\Handlers\Payloads\ApiExchangePayload;
 /** Global so that unmatched routes (404/405) are logged too; written in terminate() to add no latency. */
 final class LogApiTraffic
 {
-    private const STARTED_AT = 'api_log.started_at';
+    private const string STARTED_AT = 'api_log.started_at';
 
     public function __construct(private readonly ApiExchangeRecordHandler $recorder)
     {

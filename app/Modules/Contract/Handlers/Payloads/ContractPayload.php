@@ -9,7 +9,7 @@ use App\Modules\Contract\ValueObjects\ContractPeriod;
 
 abstract readonly class ContractPayload
 {
-    private const DATE_FORMAT = 'Y-m-d';
+    private const string DATE_FORMAT = 'Y-m-d';
 
     public function __construct(
         public string $contractNumber,

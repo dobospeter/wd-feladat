@@ -24,10 +24,9 @@ class Device extends Model
     use HasFactory;
     use HasUuids;
 
-    public const NAME_MAX = 255;
-    public const MANUFACTURER_MAX = 255;
-    public const MODEL_MAX = 255;
-    public const DESCRIPTION_MAX = 2000;
-
+    public const int NAME_MAX = 255;
+    public const int MANUFACTURER_MAX = 255;
+    public const int MODEL_MAX = 255;
+    public const int DESCRIPTION_MAX = 2000;
     protected $fillable = ['name', 'manufacturer', 'model', 'description'];
 }

@@ -31,9 +31,8 @@ class Contract extends Model
     use HasFactory;
     use HasUuids;
 
-    public const NUMBER_MAX = 64;
-    public const NOTES_MAX = 2000;
-
+    public const int NUMBER_MAX = 64;
+    public const int NOTES_MAX = 2000;
     // Date columns are uncast on purpose: they are plain Y-m-d strings.
     protected $fillable = ['contract_number', 'party_id', 'starts_on', 'ends_on', 'notes'];
 

@@ -27,8 +27,7 @@ class ContractDevice extends Model
     use HasFactory;
     use HasUuids;
 
-    public const SERIAL_NUMBER_MAX = 100;
-
+    public const int SERIAL_NUMBER_MAX = 100;
     protected $fillable = ['contract_id', 'device_id', 'serial_number'];
 
     /**

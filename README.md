@@ -28,7 +28,9 @@ git clone <repository-url> asset-register && cd asset-register
 docker compose up -d --build
 ```
 
-That is all. On the first start the app container creates the whole schema from the migrations. Check that it works:
+That is all. **No `.env` file is needed** (it is not committed): `docker-compose.yaml` has a default for every setting,
+and the container never reads `.env.example`. On the first start the app container creates the whole schema from the
+migrations. Check that it works:
 
 ```bash
 curl http://localhost:8080/up                                  # health check -> 200
@@ -53,8 +55,10 @@ there is no `.env` inside. All configuration comes from the container environmen
 | This README   | http://localhost:8080/readme (public)        |
 | Documentation | http://localhost:8080/docs (HTTP Basic auth) |
 
-Documentation credentials are `DOCS_USERNAME` / `DOCS_PASSWORD` (compose defaults: `docs` / `change-me`).
-**While either value is empty the documentation is locked for everyone.** This README is served publicly at `/readme`
+Documentation credentials are `DOCS_USERNAME` / `DOCS_PASSWORD`. Without a `.env` the compose defaults apply:
+`docs` / `change-me`. Docker Compose also reads an optional `.env` next to `docker-compose.yaml` to override the
+defaults; if you copy `.env.example` to `.env`, the values in that file win (it sets `DOCS_PASSWORD=secret`, so the
+login becomes `docs` / `secret`). **While either value is empty the documentation is locked for everyone.** This README is served publicly at `/readme`
 (`/` redirects there), so it names these defaults: **set your own `DOCS_PASSWORD` before exposing the app.**
 
 Useful commands:
@@ -136,7 +140,7 @@ local PHP reads `.env`.
 | `DB_HOST_PORT` | `3306` | Host port of MySQL, bound to `127.0.0.1` only (Docker) |
 | `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | `asset_register` / `asset_register` / `secret` | Database and application user (Docker creates them) |
 | `DB_ROOT_PASSWORD` | set in `docker-compose.yaml` | MySQL `root` password (Docker) |
-| `DOCS_USERNAME` / `DOCS_PASSWORD` | `docs` / `change-me` | HTTP Basic credentials of `/docs`; empty = locked |
+| `DOCS_USERNAME` / `DOCS_PASSWORD` | `docs` / `change-me` (compose); `docs` / `secret` in `.env.example` | HTTP Basic credentials of `/docs`; empty = locked |
 | `SEED_DEMO_DATA` | `false` | `true` seeds the demo data when the app container starts (Docker) |
 | `APP_KEY` | generated on start | Laravel key; set it to keep it stable (the API does not use encryption) |
 | `APP_URL` | `http://localhost:8080` | Base URL used in `Location` headers |
@@ -271,7 +275,8 @@ curl -i -X DELETE $BASE/contracts/$CONTRACT/devices/$ASSIGNMENT
 ### Documentation and Postman
 
 * **OpenAPI** (`docs/openapi.yaml`) is rendered as Swagger UI at `/docs` and served raw at `/docs/openapi.yaml`, both
-  behind HTTP Basic auth: `curl -u docs:change-me http://localhost:8080/docs/openapi.yaml`. A test keeps the file in
+  behind HTTP Basic auth: `curl -u docs:change-me http://localhost:8080/docs/openapi.yaml` (use your own
+  `DOCS_PASSWORD` if you set one). A test keeps the file in
   sync with the registered routes. The Swagger UI page loads its script from the jsDelivr CDN, so the browser needs
   internet access.
 * **Postman:** `docs/postman/asset-register.postman_collection.json` contains a request (with tests) for every endpoint,
@@ -378,13 +383,22 @@ the compose container, which exports `DB_CONNECTION=mysql`).
 | Tool | What | Command | Config |
 |------|------|---------|--------|
 | Pint | code style (Laravel preset plus project rules, PSR-12 based) | `composer lint` / `composer lint:fix` | `pint.json` |
+| PHP_CodeSniffer | independent PSR-1 / PSR-12 check (check only, never rewrites) | `composer cs` | `phpcs.xml.dist` |
 | PHPStan + Larastan | static analysis, Eloquent-aware | `composer analyse` | `phpstan.neon` |
 | PHPUnit | tests | `composer test` | `phpunit.xml` |
 
-`composer check` runs all three. Larastan is registered automatically by `phpstan/extension-installer`.
+`composer check` runs all four. Larastan is registered automatically by `phpstan/extension-installer`.
 
-**Git pre-commit hook** (`.githooks/pre-commit`): when PHP files are staged it runs Pint on them and blocks the commit
-on any finding. The PHPStan step (project-wide) is currently commented out in the hook. `composer install` enables it
+Why two style tools: Pint formats with the project's own rules (`pint.json`), which are not guaranteed to be PSR-12;
+PHP_CodeSniffer checks the PSR-12 standard itself, so the requirement is verified independently, with no exceptions.
+The two agree: `pint.json` sets `new_with_parentheses.anonymous_class` to `false`, so Pint writes
+`new class extends Migration`, which PSR-12 accepts (with the rule on, Pint wrote `new class()` and PSR-12 rejects it).
+
+**Line length is 120 characters:** a longer line is an error in PHP_CodeSniffer (and so blocks the commit; Pint does
+not check it). The same limit is set as `max_line_length` for PHP files in `.editorconfig`, so the IDE margin matches.
+
+**Git pre-commit hook** (`.githooks/pre-commit`): when PHP files are staged it runs Pint and then PHP_CodeSniffer on
+them and blocks the commit on any finding. The PHPStan step (project-wide) is currently commented out in the hook. `composer install` enables it
 (`git config core.hooksPath .githooks`, also available as `composer hooks`); skip it once with `git commit --no-verify`.
 The hook does not trust whichever `php` is first on `PATH` (an IDE or a shell may put another version there): it uses
 `$PHP_BIN` if set, otherwise the first PHP that satisfies `composer.json` (currently 8.5; `PATH`, then Homebrew
@@ -398,7 +412,7 @@ locations) and prints which one it picked. If none qualifies it says so, e.g.
 | Lists are empty after the install | Nothing is seeded by default: run the seeder, see [Demo data](#demo-data-seeder). |
 | Port already in use on start | Another service uses 8080 or 3306: `APP_PORT=8081 DB_HOST_PORT=3307 docker compose up -d`. |
 | A code change has no effect in Docker | The code is baked into the image: `docker compose up -d --build`. |
-| `/docs` answers 401 | Wrong credentials, or `DOCS_USERNAME` / `DOCS_PASSWORD` is empty (the docs are then locked for everyone). |
+| `/docs` answers 401 | Wrong credentials, or `DOCS_USERNAME` / `DOCS_PASSWORD` is empty (the docs are then locked for everyone). Check whether a `.env` (e.g. copied from `.env.example`) overrides the `change-me` default. |
 | Schema or data is in an unwanted state | `docker compose down -v` deletes the database volume; the next `up` rebuilds the schema from the migrations. |
 | `Your Composer dependencies require a PHP version ">= 8.5.0"` | The `php` on your `PATH` is older than 8.5 (Homebrew often keeps several). Put PHP 8.5 first, or run `/opt/homebrew/opt/php@8.5/bin/php vendor/bin/...`. |
 | Pre-commit hook says no PHP >= 8.5 was found | Set `PHP_BIN` to a PHP 8.5 binary, see [Code quality](#code-quality). |

@@ -14,7 +14,7 @@ class PartyApiTest extends TestCase
     use CreatesFixtures;
     use RefreshDatabase;
 
-    private const MISSING_ID = '0199c0de-0000-7000-8000-000000000000';
+    private const string MISSING_ID = '0199c0de-0000-7000-8000-000000000000';
 
     public function testAPartyCanBeCreated(): void
     {

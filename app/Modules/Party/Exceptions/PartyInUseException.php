@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Party\Exceptions;
 
+use Override;
 use App\Core\Exceptions\ConflictException;
 
 final class PartyInUseException extends ConflictException
@@ -13,6 +14,7 @@ final class PartyInUseException extends ConflictException
         parent::__construct("Party {$id} has contracts and cannot be deleted.");
     }
 
+    #[Override]
     public function errorCode(): string
     {
         return 'party_in_use';

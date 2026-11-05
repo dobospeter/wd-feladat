@@ -1,5 +1,5 @@
 #!/bin/sh
-# Blocks the commit when Pint reports problems (the PHPStan step below is currently commented out).
+# Blocks the commit when Pint or PHP_CodeSniffer (PSR-12) report problems (the PHPStan step is currently commented out).
 # Enabled by `composer hooks` (run automatically by `composer install`); skip once with `git commit --no-verify`.
 # Uses the PHP in $PHP_BIN, otherwise the first PHP that satisfies composer.json (not just whatever `php` is on PATH).
 
@@ -35,7 +35,7 @@ if [ -z "$php_bin" ]; then
     exit 1
 fi
 
-if [ ! -f vendor/bin/pint ]; then
+if [ ! -f vendor/bin/pint ] || [ ! -f vendor/bin/phpcs ]; then
     echo "pre-commit: dependencies are missing, run 'composer install' first." >&2
     exit 1
 fi
@@ -45,6 +45,12 @@ echo "pre-commit: using PHP $("$php_bin" -r 'echo PHP_VERSION;') ($php_bin)"
 echo "pre-commit: Pint"
 if ! git diff --cached --name-only --diff-filter=ACMR -z -- '*.php' | xargs -0 "$php_bin" vendor/bin/pint --test; then
     echo "pre-commit: style problems found. Run 'composer lint:fix', re-stage the files and commit again." >&2
+    exit 1
+fi
+
+echo "pre-commit: PHP_CodeSniffer (PSR-12)"
+if ! git diff --cached --name-only --diff-filter=ACMR -z -- '*.php' | xargs -0 "$php_bin" vendor/bin/phpcs; then
+    echo "pre-commit: PSR-12 violations found. Fix them (composer cs checks the whole project) and commit again." >&2
     exit 1
 fi
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use Override;
 use App\Modules\Device\Models\Device;
 use App\Modules\Contract\Models\Contract;
 use App\Modules\Contract\Models\ContractDevice;
@@ -19,6 +20,7 @@ final class ContractDeviceFactory extends Factory
     /**
      * @return array<string, mixed>
      */
+    #[Override]
     public function definition(): array
     {
         return [

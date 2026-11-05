@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Override;
 use RuntimeException;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
     /** RefreshDatabase wipes every table, so only in-memory SQLite is allowed. */
+    #[Override]
     protected function refreshApplication(): void
     {
         parent::refreshApplication();
