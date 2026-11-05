@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\Feature\Concerns\CreatesFixtures;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ApiTrafficLogTest extends TestCase
 {
     use CreatesFixtures;
     use RefreshDatabase;
 
-    public function test_a_request_and_its_response_are_stored(): void
+    public function testARequestAndItsResponseAreStored(): void
     {
         $response = $this->withHeaders(['User-Agent' => 'phpunit-client'])
             ->postJson('/api/v1/devices?source=test', [
@@ -38,7 +40,7 @@ class ApiTrafficLogTest extends TestCase
         $this->assertArrayHasKey('content-type', json_decode($log->response_headers, true));
     }
 
-    public function test_error_responses_are_logged_too(): void
+    public function testErrorResponsesAreLoggedToo(): void
     {
         $this->getJson('/api/v1/devices/0199c0de-0000-7000-8000-000000000000');
         $this->getJson('/api/v1/does-not-exist');
@@ -48,7 +50,7 @@ class ApiTrafficLogTest extends TestCase
         $this->assertStringContainsString('device_not_found', DB::table('api_logs')->orderBy('id')->first()->response_body);
     }
 
-    public function test_secrets_are_redacted_before_they_are_stored(): void
+    public function testSecretsAreRedactedBeforeTheyAreStored(): void
     {
         $this->withHeaders(['Authorization' => 'Bearer top-secret', 'Cookie' => 'session=abc'])
             ->postJson('/api/v1/devices', [
@@ -63,7 +65,7 @@ class ApiTrafficLogTest extends TestCase
         $this->assertStringContainsString('[REDACTED]', $log->request_body);
     }
 
-    public function test_requests_without_a_body_store_null_bodies(): void
+    public function testRequestsWithoutABodyStoreNullBodies(): void
     {
         $this->get('/api/v1/devices', ['Accept' => 'application/json'])->assertOk();
 
@@ -72,7 +74,7 @@ class ApiTrafficLogTest extends TestCase
         $this->assertNotNull($log->response_body);
     }
 
-    public function test_the_documentation_is_not_part_of_the_api_traffic_log(): void
+    public function testTheDocumentationIsNotPartOfTheApiTrafficLog(): void
     {
         $this->get('/docs')->assertUnauthorized();
         $this->get('/up');
@@ -80,7 +82,7 @@ class ApiTrafficLogTest extends TestCase
         $this->assertDatabaseCount('api_logs', 0);
     }
 
-    public function test_a_failing_log_write_never_breaks_the_api_call(): void
+    public function testAFailingLogWriteNeverBreaksTheApiCall(): void
     {
         Schema::drop('api_logs');
 

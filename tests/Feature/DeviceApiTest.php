@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\Concerns\CreatesFixtures;
 use Tests\TestCase;
+use Tests\Feature\Concerns\CreatesFixtures;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class DeviceApiTest extends TestCase
 {
     use CreatesFixtures;
     use RefreshDatabase;
 
-    public function test_a_device_can_be_created(): void
+    public function testADeviceCanBeCreated(): void
     {
         $response = $this->postJson('/api/v1/devices', [
             'name' => 'Latitude 5440',
@@ -32,7 +34,7 @@ class DeviceApiTest extends TestCase
         $this->assertDatabaseHas('devices', ['id' => $id, 'manufacturer' => 'Dell']);
     }
 
-    public function test_text_fields_are_trimmed_and_a_blank_description_becomes_null(): void
+    public function testTextFieldsAreTrimmedAndABlankDescriptionBecomesNull(): void
     {
         $this->postJson('/api/v1/devices', [
             'name' => '  Latitude  ',
@@ -46,7 +48,7 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('data.description', null);
     }
 
-    public function test_creating_a_device_validates_the_payload(): void
+    public function testCreatingADeviceValidatesThePayload(): void
     {
         $this->postJson('/api/v1/devices', ['name' => str_repeat('x', 256)])
             ->assertUnprocessable()
@@ -54,7 +56,7 @@ class DeviceApiTest extends TestCase
             ->assertJsonStructure(['error' => ['code', 'message', 'details' => ['name', 'manufacturer', 'model'], 'request_id']]);
     }
 
-    public function test_the_same_manufacturer_and_model_cannot_be_registered_twice(): void
+    public function testTheSameManufacturerAndModelCannotBeRegisteredTwice(): void
     {
         $this->createDevice(['manufacturer' => 'Dell', 'model' => '5440']);
 
@@ -63,7 +65,7 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('error.code', 'device_already_exists');
     }
 
-    public function test_devices_are_listed_with_pagination_metadata(): void
+    public function testDevicesAreListedWithPaginationMetadata(): void
     {
         foreach (range(1, 3) as $i) {
             $this->createDevice(['name' => "Device {$i}"]);
@@ -76,14 +78,14 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('data.0.name', 'Device 3');
     }
 
-    public function test_an_empty_list_is_a_valid_response(): void
+    public function testAnEmptyListIsAValidResponse(): void
     {
         $this->getJson('/api/v1/devices')
             ->assertOk()
             ->assertExactJson(['data' => [], 'meta' => ['page' => 1, 'per_page' => 15, 'total' => 0, 'last_page' => 1]]);
     }
 
-    public function test_pagination_parameters_are_validated(): void
+    public function testPaginationParametersAreValidated(): void
     {
         $this->getJson('/api/v1/devices?per_page=1000')
             ->assertUnprocessable()
@@ -91,7 +93,7 @@ class DeviceApiTest extends TestCase
             ->assertJsonStructure(['error' => ['details' => ['per_page']]]);
     }
 
-    public function test_a_single_device_can_be_fetched(): void
+    public function testASingleDeviceCanBeFetched(): void
     {
         $id = $this->createDevice(['name' => 'Fetch me']);
 
@@ -101,21 +103,21 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('data.name', 'Fetch me');
     }
 
-    public function test_an_unknown_device_is_a_404_with_the_error_envelope(): void
+    public function testAnUnknownDeviceIsA404WithTheErrorEnvelope(): void
     {
         $this->getJson('/api/v1/devices/0199c0de-0000-7000-8000-000000000000')
             ->assertNotFound()
             ->assertJsonPath('error.code', 'device_not_found');
     }
 
-    public function test_a_malformed_identifier_does_not_match_a_route(): void
+    public function testAMalformedIdentifierDoesNotMatchARoute(): void
     {
         $this->getJson('/api/v1/devices/not-a-uuid')
             ->assertNotFound()
             ->assertJsonPath('error.code', 'not_found');
     }
 
-    public function test_a_device_can_be_replaced(): void
+    public function testADeviceCanBeReplaced(): void
     {
         $id = $this->createDevice();
 
@@ -133,7 +135,7 @@ class DeviceApiTest extends TestCase
         $this->assertDatabaseHas('devices', ['id' => $id, 'manufacturer' => 'HP']);
     }
 
-    public function test_a_device_can_be_saved_without_changing_its_unique_fields(): void
+    public function testADeviceCanBeSavedWithoutChangingItsUniqueFields(): void
     {
         $id = $this->createDevice(['manufacturer' => 'Dell', 'model' => '5440']);
 
@@ -141,7 +143,7 @@ class DeviceApiTest extends TestCase
             ->assertOk();
     }
 
-    public function test_updating_a_device_into_an_existing_manufacturer_and_model_conflicts(): void
+    public function testUpdatingADeviceIntoAnExistingManufacturerAndModelConflicts(): void
     {
         $this->createDevice(['manufacturer' => 'Dell', 'model' => '5440']);
         $id = $this->createDevice(['manufacturer' => 'HP', 'model' => 'G10']);
@@ -151,14 +153,14 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('error.code', 'device_already_exists');
     }
 
-    public function test_updating_an_unknown_device_is_a_404(): void
+    public function testUpdatingAnUnknownDeviceIsA404(): void
     {
         $this->putJson('/api/v1/devices/0199c0de-0000-7000-8000-000000000000', [
             'name' => 'X', 'manufacturer' => 'Y', 'model' => 'Z',
         ])->assertNotFound()->assertJsonPath('error.code', 'device_not_found');
     }
 
-    public function test_patch_is_not_supported(): void
+    public function testPatchIsNotSupported(): void
     {
         $id = $this->createDevice();
 
@@ -167,7 +169,7 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('error.code', 'method_not_allowed');
     }
 
-    public function test_a_device_can_be_deleted(): void
+    public function testADeviceCanBeDeleted(): void
     {
         $id = $this->createDevice();
 
@@ -178,7 +180,7 @@ class DeviceApiTest extends TestCase
         $this->deleteJson("/api/v1/devices/{$id}")->assertNotFound();
     }
 
-    public function test_a_device_placed_on_a_contract_cannot_be_deleted(): void
+    public function testADevicePlacedOnAContractCannotBeDeleted(): void
     {
         $deviceId = $this->createDevice();
         $contractId = $this->createContract();

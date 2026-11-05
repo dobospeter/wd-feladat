@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\ApiLog\Support;
 
-use Illuminate\Container\Attributes\Config;
 use JsonException;
+use Illuminate\Container\Attributes\Config;
 
 final readonly class PayloadSanitizer
 {
@@ -20,8 +20,8 @@ final readonly class PayloadSanitizer
     private array $redactedFields;
 
     /**
-     * @param list<string> $redactedHeaders
-     * @param list<string> $redactedFields
+     * @param  list<string>  $redactedHeaders
+     * @param  list<string>  $redactedFields
      */
     public function __construct(
         #[Config('api_log.max_body_bytes')] private int $maxBodyBytes,
@@ -33,7 +33,7 @@ final readonly class PayloadSanitizer
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param  array<string, mixed>  $headers
      * @return array<string, mixed>
      */
     public function headers(array $headers): array
@@ -86,7 +86,7 @@ final readonly class PayloadSanitizer
     }
 
     /**
-     * @param array<array-key, mixed> $fields
+     * @param  array<array-key, mixed>  $fields
      * @return array<array-key, mixed>
      */
     private function redactFields(array $fields): array
@@ -103,11 +103,11 @@ final readonly class PayloadSanitizer
     }
 
     /**
-     * @param array<array-key, mixed> $data
+     * @param  array<array-key, mixed>  $data
      */
     private function encode(array $data): string
     {
-        return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        return (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
     }
 
     private function isTextual(string $contentType): bool

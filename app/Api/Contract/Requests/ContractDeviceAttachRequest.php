@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Requests;
 
-use App\Modules\Contract\Handlers\Payloads\ContractDeviceAttachPayload;
+use App\Core\Http\Requests\ApiRequest;
 use App\Modules\Contract\Models\ContractDevice;
-use Illuminate\Foundation\Http\FormRequest;
+use App\Modules\Contract\Handlers\Payloads\ContractDeviceAttachPayload;
 
-final class ContractDeviceAttachRequest extends FormRequest
+final class ContractDeviceAttachRequest extends ApiRequest
 {
     /**
      * @return array<string, list<string>>
@@ -25,8 +25,8 @@ final class ContractDeviceAttachRequest extends FormRequest
     {
         return new ContractDeviceAttachPayload(
             $contractId,
-            $this->validated('device_id'),
-            $this->validated('serial_number'),
+            $this->requiredString('device_id'),
+            $this->requiredString('serial_number'),
         );
     }
 }

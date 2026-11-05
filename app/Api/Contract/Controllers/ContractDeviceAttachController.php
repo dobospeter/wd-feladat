@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Controllers;
 
-use App\Api\Contract\Requests\ContractDeviceAttachRequest;
-use App\Api\Contract\Resources\ContractDetailsResource;
-use App\Modules\Contract\Handlers\ContractDeviceAttachHandler;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use App\Api\Contract\Resources\ContractDetailsResource;
+use App\Api\Contract\Requests\ContractDeviceAttachRequest;
+use App\Modules\Contract\Handlers\ContractDeviceAttachHandler;
 
 final class ContractDeviceAttachController
 {

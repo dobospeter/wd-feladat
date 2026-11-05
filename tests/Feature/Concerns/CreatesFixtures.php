@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Concerns;
 
 trait CreatesFixtures
@@ -7,7 +9,7 @@ trait CreatesFixtures
     private int $sequence = 0;
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      */
     protected function createDevice(array $overrides = []): string
     {
@@ -26,7 +28,7 @@ trait CreatesFixtures
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      */
     protected function createParty(array $overrides = []): string
     {
@@ -46,7 +48,7 @@ trait CreatesFixtures
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      */
     protected function createContract(array $overrides = []): string
     {

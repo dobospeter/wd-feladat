@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Contract\ValueObjects;
 
-use App\Modules\Contract\Exceptions\InvalidContractPeriodException;
 use DateTimeImmutable;
+use App\Modules\Contract\Exceptions\InvalidContractPeriodException;
 
 final readonly class ContractPeriod
 {

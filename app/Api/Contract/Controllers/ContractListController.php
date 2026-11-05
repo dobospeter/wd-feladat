@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Controllers;
 
-use App\Api\Contract\Resources\ContractResource;
 use App\Core\Http\Requests\PaginationRequest;
+use App\Api\Contract\Resources\ContractResource;
 use App\Core\Http\Responses\PaginatedCollection;
 use App\Modules\Contract\Handlers\ContractListHandler;
 use App\Modules\Contract\Handlers\Payloads\ContractListPayload;

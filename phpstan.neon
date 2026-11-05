@@ -1,0 +1,40 @@
+parameters:
+    level: 6
+    paths:
+        - app
+        - tests
+    inferPrivatePropertyTypeFromConstructor: true
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    excludePaths:
+        - %currentWorkingDirectory%/app/Providers/*BookingPlatform.php
+    ignoreErrors:
+        - identifier: missingType.iterableValue
+        - identifier: method.unused
+        - identifier: missingType.generics
+        - identifier: booleanNot.alwaysFalse
+        - identifier: property.notFound
+        - identifier: assign.propertyType
+        - identifier: staticMethod.notFound
+        - identifier: property.nonObject
+        #- identifier: method.notFound
+        - identifier: argument.type
+        - identifier: return.type
+        - identifier: isset.offset
+        - identifier: nullsafe.neverNull
+        - identifier: argument.templateType
+        #- '#Access to an undefined property#'
+        - '#Call to an undefined method Illuminate\\Database\\Query\\Builder::whereHas\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Query\\Builder::with\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasOne::first#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::where\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::select\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::each\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany::inRandomOrder#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasOne::where\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::first#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::where\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::whereHas\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::with\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::withCount\(\)#'
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsTo::select#'

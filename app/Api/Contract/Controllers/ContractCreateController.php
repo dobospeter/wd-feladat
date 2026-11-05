@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Controllers;
 
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use App\Api\Contract\Requests\ContractSaveRequest;
 use App\Api\Contract\Resources\ContractDetailsResource;
 use App\Modules\Contract\Handlers\ContractCreateHandler;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 
 final class ContractCreateController
 {

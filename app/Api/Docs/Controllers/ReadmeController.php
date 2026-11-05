@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Api\Docs\Controllers;
 
-use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Http\Response;
 
 final class ReadmeController
 {
     public function __invoke(): Response
     {
-        $markdown = (string) file_get_contents((string) config('docs.readme_path'));
+        $markdown = (string) file_get_contents(config()->string('docs.readme_path'));
 
         $content = Str::markdown($markdown, [
             'html_input' => 'strip',

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Core\Pagination\PageRequest;
+use Illuminate\Foundation\Http\FormRequest;
 
 final class PaginationRequest extends FormRequest
 {
@@ -23,8 +23,8 @@ final class PaginationRequest extends FormRequest
     public function toPageRequest(): PageRequest
     {
         return new PageRequest(
-            (int) $this->validated('page', 1),
-            (int) $this->validated('per_page', PageRequest::DEFAULT_PER_PAGE),
+            $this->integer('page', 1),
+            $this->integer('per_page', PageRequest::DEFAULT_PER_PAGE),
         );
     }
 }

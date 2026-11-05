@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Api\Docs\Controllers\DocsSpecController;
+use Illuminate\Support\Facades\Route;
 use App\Api\Docs\Controllers\DocsUiController;
 use App\Api\Docs\Controllers\ReadmeController;
+use App\Api\Docs\Controllers\DocsSpecController;
 use App\Api\Docs\Middleware\RequireDocsCredentials;
-use Illuminate\Support\Facades\Route;
 
 Route::get('/readme', ReadmeController::class)->name('docs.readme');
 Route::redirect('/', '/readme');

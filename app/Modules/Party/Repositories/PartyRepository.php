@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Party\Repositories;
 
+use App\Modules\Party\Models\Party;
 use App\Core\Pagination\PageRequest;
+use Illuminate\Database\QueryException;
 use App\Modules\Party\Exceptions\PartyInUseException;
 use App\Modules\Party\Exceptions\PartyNotFoundException;
-use App\Modules\Party\Models\Party;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\QueryException;
 
 final class PartyRepository
 {
@@ -30,7 +30,7 @@ final class PartyRepository
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(array $attributes): Party
     {
@@ -38,7 +38,7 @@ final class PartyRepository
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function update(Party $party, array $attributes): Party
     {
@@ -50,7 +50,7 @@ final class PartyRepository
     public function delete(Party $party): void
     {
         try {
-            $party->delete();
+            Party::query()->whereKey($party->getKey())->delete();
         } catch (QueryException $e) {
             // The only constraint that can reject a delete is the contracts foreign key.
             if ((string) $e->getCode() === '23000') {

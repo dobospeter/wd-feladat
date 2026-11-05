@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Api\Device\Controllers\DeviceCreateController;
-use App\Api\Device\Controllers\DeviceDeleteController;
+use Illuminate\Support\Facades\Route;
 use App\Api\Device\Controllers\DeviceListController;
 use App\Api\Device\Controllers\DeviceShowController;
+use App\Api\Device\Controllers\DeviceCreateController;
+use App\Api\Device\Controllers\DeviceDeleteController;
 use App\Api\Device\Controllers\DeviceUpdateController;
-use Illuminate\Support\Facades\Route;
 
 Route::get('devices', DeviceListController::class)->name('devices.index');
 Route::post('devices', DeviceCreateController::class)->name('devices.store');

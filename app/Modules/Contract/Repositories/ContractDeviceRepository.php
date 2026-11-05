@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Contract\Repositories;
 
-use App\Modules\Contract\Exceptions\ContractDeviceNotFoundException;
 use App\Modules\Contract\Models\ContractDevice;
+use App\Modules\Contract\Exceptions\ContractDeviceNotFoundException;
 
 final class ContractDeviceRepository
 {

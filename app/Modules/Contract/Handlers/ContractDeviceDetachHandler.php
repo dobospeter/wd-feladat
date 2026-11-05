@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Contract\Handlers;
 
-use App\Modules\Contract\Handlers\Payloads\ContractDeviceDetachPayload;
-use App\Modules\Contract\Repositories\ContractDeviceRepository;
 use App\Modules\Contract\Repositories\ContractRepository;
+use App\Modules\Contract\Repositories\ContractDeviceRepository;
+use App\Modules\Contract\Handlers\Payloads\ContractDeviceDetachPayload;
 
 final readonly class ContractDeviceDetachHandler
 {

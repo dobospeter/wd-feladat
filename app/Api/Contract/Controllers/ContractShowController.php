@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Controllers;
 
-use App\Api\Contract\Resources\ContractDetailsResource;
 use App\Modules\Contract\Handlers\ContractShowHandler;
+use App\Api\Contract\Resources\ContractDetailsResource;
 use App\Modules\Contract\Handlers\Payloads\ContractShowPayload;
 
 final class ContractShowController

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Device\Repositories;
 
 use App\Core\Pagination\PageRequest;
-use App\Modules\Device\Exceptions\DeviceInUseException;
-use App\Modules\Device\Exceptions\DeviceNotFoundException;
 use App\Modules\Device\Models\Device;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
+use App\Modules\Device\Exceptions\DeviceInUseException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Modules\Device\Exceptions\DeviceNotFoundException;
 
 final class DeviceRepository
 {
@@ -30,7 +30,7 @@ final class DeviceRepository
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(array $attributes): Device
     {
@@ -38,7 +38,7 @@ final class DeviceRepository
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function update(Device $device, array $attributes): Device
     {
@@ -50,7 +50,7 @@ final class DeviceRepository
     public function delete(Device $device): void
     {
         try {
-            $device->delete();
+            Device::query()->whereKey($device->getKey())->delete();
         } catch (QueryException $e) {
             // The only constraint that can reject a delete is the contract_devices foreign key.
             if ((string) $e->getCode() === '23000') {

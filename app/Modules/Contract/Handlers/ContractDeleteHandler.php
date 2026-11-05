@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Contract\Handlers;
 
-use App\Modules\Contract\Handlers\Payloads\ContractDeletePayload;
 use App\Modules\Contract\Repositories\ContractRepository;
+use App\Modules\Contract\Handlers\Payloads\ContractDeletePayload;
 
 final readonly class ContractDeleteHandler
 {

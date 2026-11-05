@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Contract\Repositories;
 
 use App\Core\Pagination\PageRequest;
-use App\Modules\Contract\Exceptions\ContractNotFoundException;
 use App\Modules\Contract\Models\Contract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Modules\Contract\Exceptions\ContractNotFoundException;
 
 final class ContractRepository
 {
@@ -25,7 +25,7 @@ final class ContractRepository
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(array $attributes): Contract
     {
@@ -33,7 +33,7 @@ final class ContractRepository
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function update(Contract $contract, array $attributes): Contract
     {

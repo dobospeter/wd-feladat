@@ -7,8 +7,8 @@ namespace App\Core\Http;
 final readonly class ApiError
 {
     /**
-     * @param array<string, mixed> $details
-     * @param array<string, string> $headers
+     * @param  array<string, mixed>  $details
+     * @param  array<string, string>  $headers
      */
     public function __construct(
         public int $status,

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Feature\Concerns\CreatesFixtures;
 use Tests\TestCase;
+use Tests\Feature\Concerns\CreatesFixtures;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ContractApiTest extends TestCase
 {
@@ -13,7 +15,7 @@ class ContractApiTest extends TestCase
 
     private const MISSING_ID = '0199c0de-0000-7000-8000-000000000000';
 
-    public function test_a_contract_can_be_created(): void
+    public function testAContractCanBeCreated(): void
     {
         $partyId = $this->createParty(['name' => 'Happy Gastro Kft.', 'tax_number' => '12345678-2-42']);
 
@@ -40,7 +42,7 @@ class ContractApiTest extends TestCase
         $this->assertDatabaseHas('contracts', ['id' => $id, 'contract_number' => 'SZ-2026-001']);
     }
 
-    public function test_text_fields_are_trimmed_and_blank_notes_become_null(): void
+    public function testTextFieldsAreTrimmedAndBlankNotesBecomeNull(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => '  C-TRIM  ',
@@ -53,7 +55,7 @@ class ContractApiTest extends TestCase
             ->assertJsonPath('data.notes', null);
     }
 
-    public function test_a_contract_needs_an_existing_party(): void
+    public function testAContractNeedsAnExistingParty(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => 'NO-PARTY',
@@ -67,7 +69,7 @@ class ContractApiTest extends TestCase
         $this->assertDatabaseCount('contracts', 0);
     }
 
-    public function test_updating_a_contract_to_an_unknown_party_is_rejected(): void
+    public function testUpdatingAContractToAnUnknownPartyIsRejected(): void
     {
         $contractId = $this->createContract();
 
@@ -78,14 +80,14 @@ class ContractApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonPath('error.code', 'party_not_found');
     }
 
-    public function test_the_party_id_must_be_a_uuid(): void
+    public function testThePartyIdMustBeAUuid(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => 'BAD-PARTY', 'party_id' => 'acme', 'starts_on' => '2026-01-01',
         ])->assertUnprocessable()->assertJsonStructure(['error' => ['details' => ['party_id']]]);
     }
 
-    public function test_the_list_and_the_detail_both_embed_the_party(): void
+    public function testTheListAndTheDetailBothEmbedTheParty(): void
     {
         $partyId = $this->createParty(['name' => 'Embedded Kft.']);
         $contractId = $this->createContract(['party_id' => $partyId]);
@@ -100,7 +102,7 @@ class ContractApiTest extends TestCase
             ->assertJsonPath('data.party.id', $partyId);
     }
 
-    public function test_a_contract_can_be_open_ended(): void
+    public function testAContractCanBeOpenEnded(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => 'OPEN-1',
@@ -109,7 +111,7 @@ class ContractApiTest extends TestCase
         ])->assertCreated()->assertJsonPath('data.ends_on', null);
     }
 
-    public function test_creating_a_contract_validates_the_payload(): void
+    public function testCreatingAContractValidatesThePayload(): void
     {
         $this->postJson('/api/v1/contracts', ['starts_on' => '01/02/2026', 'ends_on' => 'tomorrow'])
             ->assertUnprocessable()
@@ -117,7 +119,7 @@ class ContractApiTest extends TestCase
             ->assertJsonStructure(['error' => ['details' => ['contract_number', 'party_id', 'starts_on', 'ends_on']]]);
     }
 
-    public function test_a_contract_cannot_end_before_it_starts(): void
+    public function testAContractCannotEndBeforeItStarts(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => 'BAD-1',
@@ -132,7 +134,7 @@ class ContractApiTest extends TestCase
         $this->assertDatabaseCount('contracts', 0);
     }
 
-    public function test_the_contract_number_must_be_unique(): void
+    public function testTheContractNumberMustBeUnique(): void
     {
         $this->createContract(['contract_number' => 'DUP-1']);
 
@@ -141,7 +143,7 @@ class ContractApiTest extends TestCase
         ])->assertConflict()->assertJsonPath('error.code', 'contract_number_already_exists');
     }
 
-    public function test_the_contract_list_does_not_contain_the_devices(): void
+    public function testTheContractListDoesNotContainTheDevices(): void
     {
         $contractId = $this->createContract();
         $this->attachDevice($contractId, $this->createDevice(), 'SN-1')->assertCreated();
@@ -154,7 +156,7 @@ class ContractApiTest extends TestCase
         $this->assertArrayNotHasKey('devices', $response->json('data.0'));
     }
 
-    public function test_the_contract_detail_contains_the_devices(): void
+    public function testTheContractDetailContainsTheDevices(): void
     {
         $contractId = $this->createContract();
         $deviceId = $this->createDevice(['name' => 'Latitude', 'manufacturer' => 'Dell', 'model' => '5440']);
@@ -178,14 +180,14 @@ class ContractApiTest extends TestCase
             ]);
     }
 
-    public function test_an_unknown_contract_is_a_404(): void
+    public function testAnUnknownContractIsA404(): void
     {
         $this->getJson('/api/v1/contracts/' . self::MISSING_ID)
             ->assertNotFound()
             ->assertJsonPath('error.code', 'contract_not_found');
     }
 
-    public function test_a_contract_can_be_replaced_and_keeps_its_devices(): void
+    public function testAContractCanBeReplacedAndKeepsItsDevices(): void
     {
         $contractId = $this->createContract();
         $this->attachDevice($contractId, $this->createDevice(), 'SN-1')->assertCreated();
@@ -208,7 +210,7 @@ class ContractApiTest extends TestCase
         $this->assertDatabaseHas('contracts', ['id' => $contractId, 'contract_number' => 'RENEWED-1', 'party_id' => $newParty]);
     }
 
-    public function test_updating_a_contract_validates_the_period_and_the_number(): void
+    public function testUpdatingAContractValidatesThePeriodAndTheNumber(): void
     {
         $this->createContract(['contract_number' => 'TAKEN']);
         $contractId = $this->createContract();
@@ -222,14 +224,14 @@ class ContractApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonPath('error.code', 'invalid_contract_period');
     }
 
-    public function test_updating_an_unknown_contract_is_a_404(): void
+    public function testUpdatingAnUnknownContractIsA404(): void
     {
         $this->putJson('/api/v1/contracts/' . self::MISSING_ID, [
             'contract_number' => 'X', 'party_id' => $this->createParty(), 'starts_on' => '2026-01-01',
         ])->assertNotFound()->assertJsonPath('error.code', 'contract_not_found');
     }
 
-    public function test_a_contract_can_be_deleted_and_releases_its_devices(): void
+    public function testAContractCanBeDeletedAndReleasesItsDevices(): void
     {
         $contractId = $this->createContract();
         $deviceId = $this->createDevice();
@@ -243,12 +245,12 @@ class ContractApiTest extends TestCase
         $this->deleteJson("/api/v1/devices/{$deviceId}")->assertNoContent();
     }
 
-    public function test_deleting_an_unknown_contract_is_a_404(): void
+    public function testDeletingAnUnknownContractIsA404(): void
     {
         $this->deleteJson('/api/v1/contracts/' . self::MISSING_ID)->assertNotFound();
     }
 
-    public function test_the_same_device_type_can_be_on_many_contracts_with_different_serial_numbers(): void
+    public function testTheSameDeviceTypeCanBeOnManyContractsWithDifferentSerialNumbers(): void
     {
         $deviceId = $this->createDevice();
         $first = $this->createContract();
@@ -262,7 +264,7 @@ class ContractApiTest extends TestCase
         $this->getJson("/api/v1/contracts/{$second}")->assertJsonCount(2, 'data.devices');
     }
 
-    public function test_a_unit_cannot_be_placed_twice(): void
+    public function testAUnitCannotBePlacedTwice(): void
     {
         $deviceId = $this->createDevice();
         $first = $this->createContract();
@@ -279,7 +281,7 @@ class ContractApiTest extends TestCase
         $this->assertDatabaseCount('contract_devices', 1);
     }
 
-    public function test_different_device_types_may_share_a_serial_number(): void
+    public function testDifferentDeviceTypesMayShareASerialNumber(): void
     {
         $contractId = $this->createContract();
 
@@ -287,7 +289,7 @@ class ContractApiTest extends TestCase
         $this->attachDevice($contractId, $this->createDevice(), 'SN-1')->assertCreated();
     }
 
-    public function test_attaching_validates_the_payload(): void
+    public function testAttachingValidatesThePayload(): void
     {
         $contractId = $this->createContract();
 
@@ -297,7 +299,7 @@ class ContractApiTest extends TestCase
             ->assertJsonStructure(['error' => ['details' => ['device_id', 'serial_number']]]);
     }
 
-    public function test_attaching_an_unknown_device_is_rejected_as_a_business_error(): void
+    public function testAttachingAnUnknownDeviceIsRejectedAsABusinessError(): void
     {
         $contractId = $this->createContract();
 
@@ -307,14 +309,14 @@ class ContractApiTest extends TestCase
             ->assertJsonStructure(['error' => ['details' => ['device_id']]]);
     }
 
-    public function test_attaching_to_an_unknown_contract_is_a_404(): void
+    public function testAttachingToAnUnknownContractIsA404(): void
     {
         $this->attachDevice(self::MISSING_ID, $this->createDevice(), 'SN-1')
             ->assertNotFound()
             ->assertJsonPath('error.code', 'contract_not_found');
     }
 
-    public function test_a_device_can_be_taken_off_a_contract(): void
+    public function testADeviceCanBeTakenOffAContract(): void
     {
         $contractId = $this->createContract();
         $deviceId = $this->createDevice();
@@ -331,7 +333,7 @@ class ContractApiTest extends TestCase
         $this->attachDevice($other, $deviceId, 'SN-DROP')->assertCreated();
     }
 
-    public function test_taking_off_an_unknown_assignment_is_a_404(): void
+    public function testTakingOffAnUnknownAssignmentIsA404(): void
     {
         $contractId = $this->createContract();
 
@@ -340,7 +342,7 @@ class ContractApiTest extends TestCase
             ->assertJsonPath('error.code', 'contract_device_not_found');
     }
 
-    public function test_an_assignment_cannot_be_removed_through_another_contract(): void
+    public function testAnAssignmentCannotBeRemovedThroughAnotherContract(): void
     {
         $owner = $this->createContract();
         $stranger = $this->createContract();

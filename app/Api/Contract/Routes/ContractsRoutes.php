@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Api\Contract\Controllers\ContractCreateController;
-use App\Api\Contract\Controllers\ContractDeleteController;
-use App\Api\Contract\Controllers\ContractDeviceAttachController;
-use App\Api\Contract\Controllers\ContractDeviceDetachController;
+use Illuminate\Support\Facades\Route;
 use App\Api\Contract\Controllers\ContractListController;
 use App\Api\Contract\Controllers\ContractShowController;
+use App\Api\Contract\Controllers\ContractCreateController;
+use App\Api\Contract\Controllers\ContractDeleteController;
 use App\Api\Contract\Controllers\ContractUpdateController;
-use Illuminate\Support\Facades\Route;
+use App\Api\Contract\Controllers\ContractDeviceAttachController;
+use App\Api\Contract\Controllers\ContractDeviceDetachController;
 
 Route::get('contracts', ContractListController::class)->name('contracts.index');
 Route::post('contracts', ContractCreateController::class)->name('contracts.store');

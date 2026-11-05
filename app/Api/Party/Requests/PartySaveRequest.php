@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Api\Party\Requests;
 
+use App\Modules\Party\Models\Party;
+use App\Core\Http\Requests\ApiRequest;
 use App\Modules\Party\Handlers\Payloads\PartyCreatePayload;
 use App\Modules\Party\Handlers\Payloads\PartyUpdatePayload;
-use App\Modules\Party\Models\Party;
-use Illuminate\Foundation\Http\FormRequest;
 
-final class PartySaveRequest extends FormRequest
+final class PartySaveRequest extends ApiRequest
 {
     /**
      * @return array<string, list<string>>
@@ -28,11 +28,11 @@ final class PartySaveRequest extends FormRequest
     public function toCreatePayload(): PartyCreatePayload
     {
         return new PartyCreatePayload(
-            $this->validated('name'),
-            $this->validated('tax_number'),
-            $this->validated('address'),
-            $this->validated('email'),
-            $this->validated('phone'),
+            $this->requiredString('name'),
+            $this->nullableString('tax_number'),
+            $this->nullableString('address'),
+            $this->nullableString('email'),
+            $this->nullableString('phone'),
         );
     }
 
@@ -40,11 +40,11 @@ final class PartySaveRequest extends FormRequest
     {
         return new PartyUpdatePayload(
             $id,
-            $this->validated('name'),
-            $this->validated('tax_number'),
-            $this->validated('address'),
-            $this->validated('email'),
-            $this->validated('phone'),
+            $this->requiredString('name'),
+            $this->nullableString('tax_number'),
+            $this->nullableString('address'),
+            $this->nullableString('email'),
+            $this->nullableString('phone'),
         );
     }
 }

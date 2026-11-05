@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Http\Responses;
 
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Core\Pagination\Page;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 final class PaginatedCollection
 {
@@ -15,7 +15,8 @@ final class PaginatedCollection
     }
 
     /**
-     * @param class-string<JsonResource> $resource
+     * @param  Page<object>  $page
+     * @param  class-string<JsonResource>  $resource
      */
     public static function from(Page $page, string $resource): AnonymousResourceCollection
     {

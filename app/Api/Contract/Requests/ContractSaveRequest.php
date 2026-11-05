@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Requests;
 
+use LogicException;
+use DateTimeImmutable;
+use App\Core\Http\Requests\ApiRequest;
+use App\Modules\Contract\Models\Contract;
 use App\Modules\Contract\Handlers\Payloads\ContractCreatePayload;
 use App\Modules\Contract\Handlers\Payloads\ContractUpdatePayload;
-use App\Modules\Contract\Models\Contract;
-use DateTimeImmutable;
-use Illuminate\Foundation\Http\FormRequest;
 
 /** The ends_on >= starts_on rule is enforced by ContractPeriod, not duplicated here. */
-final class ContractSaveRequest extends FormRequest
+final class ContractSaveRequest extends ApiRequest
 {
     private const DATE_FORMAT = 'Y-m-d';
 
@@ -32,11 +33,11 @@ final class ContractSaveRequest extends FormRequest
     public function toCreatePayload(): ContractCreatePayload
     {
         return new ContractCreatePayload(
-            $this->validated('contract_number'),
-            $this->validated('party_id'),
-            $this->parseDate($this->validated('starts_on')),
-            $this->validated('ends_on') === null ? null : $this->parseDate($this->validated('ends_on')),
-            $this->validated('notes'),
+            $this->requiredString('contract_number'),
+            $this->requiredString('party_id'),
+            $this->startsOn(),
+            $this->endsOn(),
+            $this->nullableString('notes'),
         );
     }
 
@@ -44,16 +45,29 @@ final class ContractSaveRequest extends FormRequest
     {
         return new ContractUpdatePayload(
             $id,
-            $this->validated('contract_number'),
-            $this->validated('party_id'),
-            $this->parseDate($this->validated('starts_on')),
-            $this->validated('ends_on') === null ? null : $this->parseDate($this->validated('ends_on')),
-            $this->validated('notes'),
+            $this->requiredString('contract_number'),
+            $this->requiredString('party_id'),
+            $this->startsOn(),
+            $this->endsOn(),
+            $this->nullableString('notes'),
         );
+    }
+
+    private function startsOn(): DateTimeImmutable
+    {
+        return $this->parseDate($this->requiredString('starts_on'));
+    }
+
+    private function endsOn(): ?DateTimeImmutable
+    {
+        $value = $this->nullableString('ends_on');
+
+        return $value === null ? null : $this->parseDate($value);
     }
 
     private function parseDate(string $value): DateTimeImmutable
     {
-        return DateTimeImmutable::createFromFormat('!' . self::DATE_FORMAT, $value);
+        return DateTimeImmutable::createFromFormat('!' . self::DATE_FORMAT, $value)
+            ?: throw new LogicException("Validated date '{$value}' cannot be parsed.");
     }
 }

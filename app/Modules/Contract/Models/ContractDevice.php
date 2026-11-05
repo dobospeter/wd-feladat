@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Contract\Models;
 
 use App\Modules\Device\Models\Device;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**

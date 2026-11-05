@@ -1,0 +1,56 @@
+#!/bin/sh
+# Blocks the commit when Pint reports problems (the PHPStan step below is currently commented out).
+# Enabled by `composer hooks` (run automatically by `composer install`); skip once with `git commit --no-verify`.
+# Uses the PHP in $PHP_BIN, otherwise the first PHP that satisfies composer.json (not just whatever `php` is on PATH).
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+if [ -z "$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.php$')" ]; then
+    exit 0
+fi
+
+required=$(sed -n 's/.*"php": *"[^0-9]*\([0-9][0-9.]*\)".*/\1/p' composer.json | head -1)
+
+meets_requirement() {
+    [ -n "$1" ] && [ -x "$1" ] && "$1" -r 'exit(version_compare(PHP_VERSION, $argv[1], ">=") ? 0 : 1);' "$required" 2>/dev/null
+}
+
+php_bin=""
+if [ -n "$PHP_BIN" ]; then
+    meets_requirement "$PHP_BIN" && php_bin="$PHP_BIN"
+else
+    for candidate in "$(command -v php)" "$(command -v php"$required")" \
+        /opt/homebrew/opt/php@"$required"/bin/php /opt/homebrew/bin/php \
+        /usr/local/opt/php@"$required"/bin/php /usr/local/bin/php; do
+        if meets_requirement "$candidate"; then
+            php_bin="$candidate"
+            break
+        fi
+    done
+fi
+
+if [ -z "$php_bin" ]; then
+    echo "pre-commit: no PHP >= $required found (PHP_BIN='${PHP_BIN:-}', php on PATH: $(command -v php || echo none))." >&2
+    echo "pre-commit: set PHP_BIN to a suitable binary, e.g. PHP_BIN=/opt/homebrew/opt/php@$required/bin/php git commit" >&2
+    exit 1
+fi
+
+if [ ! -f vendor/bin/pint ]; then
+    echo "pre-commit: dependencies are missing, run 'composer install' first." >&2
+    exit 1
+fi
+
+echo "pre-commit: using PHP $("$php_bin" -r 'echo PHP_VERSION;') ($php_bin)"
+
+echo "pre-commit: Pint"
+if ! git diff --cached --name-only --diff-filter=ACMR -z -- '*.php' | xargs -0 "$php_bin" vendor/bin/pint --test; then
+    echo "pre-commit: style problems found. Run 'composer lint:fix', re-stage the files and commit again." >&2
+    exit 1
+fi
+
+# PHPStan (Larastan) is disabled for now; remove the leading '# ' to enable it again.
+# echo "pre-commit: PHPStan (Larastan)"
+# if ! "$php_bin" vendor/bin/phpstan analyse --memory-limit=1G --no-progress; then
+#     echo "pre-commit: static analysis failed. Fix the findings above and commit again." >&2
+#     exit 1
+# fi

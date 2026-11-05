@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-use Illuminate\Routing\Route;
-use Illuminate\Support\Facades\Route as RouteFacade;
-use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
+use Illuminate\Routing\Route;
+use Symfony\Component\Yaml\Yaml;
+use Illuminate\Support\Facades\Route as RouteFacade;
 
 class OpenApiSpecTest extends TestCase
 {
-    public function test_the_documented_operations_match_the_registered_api_routes(): void
+    public function testTheDocumentedOperationsMatchTheRegisteredApiRoutes(): void
     {
         $spec = Yaml::parseFile(base_path('docs/openapi.yaml'));
 
@@ -23,7 +25,7 @@ class OpenApiSpecTest extends TestCase
         $registered = [];
         foreach (RouteFacade::getRoutes()->getRoutes() as $route) {
             /** @var Route $route */
-            if (!str_starts_with($route->uri(), 'api/')) {
+            if (! str_starts_with($route->uri(), 'api/')) {
                 continue;
             }
 
@@ -38,7 +40,7 @@ class OpenApiSpecTest extends TestCase
         $this->assertSame($registered, $documented);
     }
 
-    public function test_every_operation_has_a_unique_operation_id(): void
+    public function testEveryOperationHasAUniqueOperationId(): void
     {
         $spec = Yaml::parseFile(base_path('docs/openapi.yaml'));
 

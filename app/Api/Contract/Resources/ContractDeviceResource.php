@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Resources;
 
-use App\Api\Device\Resources\DeviceResource;
-use App\Modules\Contract\Handlers\Results\ContractDeviceResult;
 use Illuminate\Http\Request;
+use App\Api\Device\Resources\DeviceResource;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Modules\Contract\Handlers\Results\ContractDeviceResult;
 
 /**
  * @property ContractDeviceResult $resource

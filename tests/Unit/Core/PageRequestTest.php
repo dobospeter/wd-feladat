@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Core;
 
-use App\Core\Exceptions\InvalidValueException;
 use App\Core\Pagination\Page;
-use App\Core\Pagination\PageRequest;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use App\Core\Pagination\PageRequest;
+use App\Core\Exceptions\InvalidValueException;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class PageRequestTest extends TestCase
 {
@@ -19,14 +21,14 @@ class PageRequestTest extends TestCase
     }
 
     #[DataProvider('invalidRequests')]
-    public function test_invalid_requests_are_rejected(int $page, int $perPage): void
+    public function testInvalidRequestsAreRejected(int $page, int $perPage): void
     {
         $this->expectException(InvalidValueException::class);
 
         new PageRequest($page, $perPage);
     }
 
-    public function test_the_last_page_is_at_least_one(): void
+    public function testTheLastPageIsAtLeastOne(): void
     {
         $this->assertSame(1, (new Page([], 0, new PageRequest()))->lastPage());
         $this->assertSame(3, (new Page([], 21, new PageRequest(1, 10)))->lastPage());

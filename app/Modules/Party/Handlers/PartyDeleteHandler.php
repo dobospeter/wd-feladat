@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Party\Handlers;
 
-use App\Modules\Party\Handlers\Payloads\PartyDeletePayload;
 use App\Modules\Party\Repositories\PartyRepository;
+use App\Modules\Party\Handlers\Payloads\PartyDeletePayload;
 
 final readonly class PartyDeleteHandler
 {

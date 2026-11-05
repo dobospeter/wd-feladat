@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Api\Contract\Controllers;
 
+use Illuminate\Http\Response;
 use App\Modules\Contract\Handlers\ContractDeviceDetachHandler;
 use App\Modules\Contract\Handlers\Payloads\ContractDeviceDetachPayload;
-use Illuminate\Http\Response;
 
 final class ContractDeviceDetachController
 {

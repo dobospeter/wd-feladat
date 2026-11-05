@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ReadmeTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_readme_is_public_and_rendered_as_html(): void
+    public function testTheReadmeIsPublicAndRenderedAsHtml(): void
     {
         $this->get('/readme')
             ->assertOk()
@@ -20,12 +22,12 @@ class ReadmeTest extends TestCase
             ->assertSee('href="/docs"', false);
     }
 
-    public function test_the_root_url_leads_to_the_readme(): void
+    public function testTheRootUrlLeadsToTheReadme(): void
     {
         $this->get('/')->assertRedirect('/readme');
     }
 
-    public function test_markup_in_the_markdown_cannot_inject_scripts(): void
+    public function testMarkupInTheMarkdownCannotInjectScripts(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'readme');
         file_put_contents($path, "# Title\n\n<script>alert(1)</script>\n\n[x](javascript:alert(1))\n");
@@ -38,7 +40,7 @@ class ReadmeTest extends TestCase
         $this->assertStringNotContainsString('href="javascript:', $response->getContent());
     }
 
-    public function test_reading_the_readme_is_not_part_of_the_api_traffic_log(): void
+    public function testReadingTheReadmeIsNotPartOfTheApiTrafficLog(): void
     {
         $this->get('/readme')->assertOk();
 

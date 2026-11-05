@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Contract\Handlers\Payloads;
 
-use App\Modules\Contract\ValueObjects\ContractPeriod;
 use DateTimeImmutable;
+use App\Modules\Contract\ValueObjects\ContractPeriod;
 
 abstract readonly class ContractPayload
 {
@@ -21,7 +21,7 @@ abstract readonly class ContractPayload
     }
 
     /**
-     * @return array<string, string|null>
+     * @return array{contract_number: string, party_id: string, starts_on: string, ends_on: string|null, notes: string|null}
      */
     public function attributes(): array
     {

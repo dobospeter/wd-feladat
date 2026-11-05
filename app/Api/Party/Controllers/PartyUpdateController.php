@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Api\Party\Controllers;
 
-use App\Api\Party\Requests\PartySaveRequest;
 use App\Api\Party\Resources\PartyResource;
+use App\Api\Party\Requests\PartySaveRequest;
 use App\Modules\Party\Handlers\PartyUpdateHandler;
 
 final class PartyUpdateController

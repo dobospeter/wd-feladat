@@ -38,7 +38,8 @@ purpose, so a developer's local `.env` can never switch debug output on in the c
 
 ```bash
 docker compose exec app php artisan test        # run the test suite (always on in-memory SQLite)
-docker compose exec app vendor/bin/pint --test  # PSR-12 check
+docker compose exec app vendor/bin/pint --test  # code style (pint.json)
+docker compose exec app vendor/bin/phpstan analyse --memory-limit=1G   # static analysis (Larastan)
 docker compose down -v                          # stop and drop the database volume
 ```
 
@@ -186,6 +187,23 @@ app/                                 PSR-4 namespace App\
   modules under `/api/v1`, `Docs` at the root. A new module needs no wiring.
 * **Race safety**: handlers pre-check for friendly messages; the unique indexes and foreign keys are the final
   authority (a violated unique index is rendered as 409, a blocked device delete as `device_in_use`).
+
+## Code quality
+
+| Tool | What | Command | Config |
+|------|------|---------|--------|
+| Pint | code style (Laravel preset plus project rules, PSR-12 based) | `composer lint` / `composer lint:fix` | `pint.json` |
+| PHPStan + Larastan | static analysis, Eloquent-aware | `composer analyse` | `phpstan.neon` |
+| PHPUnit | tests | `composer test` | `phpunit.xml` |
+
+`composer check` runs all three. Larastan is registered automatically by `phpstan/extension-installer`.
+
+**Git pre-commit hook** (`.githooks/pre-commit`): when PHP files are staged it runs Pint on them and blocks the commit
+on any finding. The PHPStan step (project-wide) is currently commented out in the hook. `composer install` enables it (`git config core.hooksPath .githooks`,
+also available as `composer hooks`); skip it once with `git commit --no-verify`. The hook does not trust whichever
+`php` is first on `PATH` (an IDE or a shell may put another version there): it uses `$PHP_BIN` if set, otherwise the
+first PHP that satisfies `composer.json` (currently 8.5; `PATH`, then Homebrew locations) and prints which one it
+picked. If none qualifies it says so, e.g. `PHP_BIN=/opt/homebrew/opt/php@8.5/bin/php git commit`.
 
 ## Development plan
 

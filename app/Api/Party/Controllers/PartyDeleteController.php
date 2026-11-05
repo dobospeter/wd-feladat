@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Api\Party\Controllers;
 
+use Illuminate\Http\Response;
 use App\Modules\Party\Handlers\PartyDeleteHandler;
 use App\Modules\Party\Handlers\Payloads\PartyDeletePayload;
-use Illuminate\Http\Response;
 
 final class PartyDeleteController
 {

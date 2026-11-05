@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\ApiLog\Handlers;
 
-use App\Modules\ApiLog\Handlers\Payloads\ApiExchangePayload;
-use App\Modules\ApiLog\Repositories\ApiLogRepository;
 use App\Modules\ApiLog\Support\PayloadSanitizer;
+use App\Modules\ApiLog\Repositories\ApiLogRepository;
+use App\Modules\ApiLog\Handlers\Payloads\ApiExchangePayload;
 
 final readonly class ApiExchangeRecordHandler
 {
@@ -36,14 +36,18 @@ final readonly class ApiExchangeRecordHandler
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param  array<string, mixed>  $headers
      */
     private function contentType(array $headers): ?string
     {
         foreach ($headers as $name => $value) {
-            if (strtolower((string) $name) === 'content-type') {
-                return (string) (is_array($value) ? ($value[0] ?? '') : $value);
+            if (strtolower((string) $name) !== 'content-type') {
+                continue;
             }
+
+            $first = is_array($value) ? reset($value) : $value;
+
+            return is_string($first) ? $first : null;
         }
 
         return null;

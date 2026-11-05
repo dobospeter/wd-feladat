@@ -27,7 +27,7 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 | 11 | Supported PHP, ideally 8.5 | `^8.5`, container 8.5.12 | `docker compose exec app php -v` |
 | 12 | MySQL | MySQL 8.4 | full suite of requests run against it |
 | 13 | Clean code (SOLID, DRY), DDD | Api / Modules / Core layers, handlers with payloads and results, shared `PaginatedCollection` | review, see §3 |
-| 14 | PSR-4 and PSR-12 | Pint `psr12` preset; `composer dump-autoload --strict-psr` | both clean |
+| 14 | PSR-4 and PSR-12 | Pint (`pint.json`, Laravel preset, PSR-12 based) and PHPStan + Larastan, both enforced by the pre-commit hook; `composer dump-autoload --strict-psr` | all clean |
 | 15 | Docker package (`docker-compose.yaml`) | nginx + PHP-FPM app + MySQL, self-contained images | fresh-copy build and run (§6) |
 | 16 | Project can be built from migrations | 4 migrations, applied on container start | fresh MySQL volume; rollback/re-apply round trip |
 
@@ -65,7 +65,9 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 ## 5. Quality gates (definition of done)
 
 ```bash
-vendor/bin/pint --test                        # PSR-12
+vendor/bin/pint --test                        # code style
+vendor/bin/phpstan analyse                    # static analysis (Larastan)
+composer check                                # lint + analyse + test in one go
 php artisan test                              # 98 tests
 composer validate --strict
 composer dump-autoload -o --strict-psr        # PSR-4
@@ -108,7 +110,7 @@ are about delivery and robustness, not missing functionality.
 | 11 | Swagger UI is loaded from a CDN, so `/docs` needs internet access in the browser; vendor the assets or switch to an offline renderer |
 | 12 | Demo seeder / factories |
 | 13 | Container hardening: restart policies, `web` healthcheck, TLS termination, read-only filesystem |
-| 14 | Static analysis (Larastan) as an extra gate |
+| 14 | Raise PHPStan above level 6 and drop the ignored identifiers (`argument.type`, `return.type`, ...) from `phpstan.neon`; the `app/` code already passed level 9 without ignores |
 
 ## 7. Recommended next steps
 

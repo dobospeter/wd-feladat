@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Device\Handlers;
 
-use App\Modules\Device\Handlers\Payloads\DeviceShowPayload;
 use App\Modules\Device\Handlers\Results\DeviceResult;
 use App\Modules\Device\Repositories\DeviceRepository;
+use App\Modules\Device\Handlers\Payloads\DeviceShowPayload;
 
 final readonly class DeviceShowHandler
 {

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\ApiLog;
 
-use App\Modules\ApiLog\Support\PayloadSanitizer;
 use PHPUnit\Framework\TestCase;
+use App\Modules\ApiLog\Support\PayloadSanitizer;
 
 class PayloadSanitizerTest extends TestCase
 {
@@ -12,39 +14,39 @@ class PayloadSanitizerTest extends TestCase
         return new PayloadSanitizer($maxBytes, ['Authorization'], ['password', 'token']);
     }
 
-    public function test_sensitive_headers_are_redacted_and_names_lowercased(): void
+    public function testSensitiveHeadersAreRedactedAndNamesLowercased(): void
     {
         $headers = $this->sanitizer()->headers(['Authorization' => ['Bearer x'], 'Accept' => ['application/json']]);
 
         $this->assertSame(['authorization' => '[REDACTED]', 'accept' => ['application/json']], $headers);
     }
 
-    public function test_json_fields_are_redacted_at_any_depth(): void
+    public function testJsonFieldsAreRedactedAtAnyDepth(): void
     {
         $body = $this->sanitizer()->body('{"user":{"Password":"p","name":"n"},"items":[{"token":"t"}]}', 'application/json');
 
         $this->assertSame('{"user":{"Password":"[REDACTED]","name":"n"},"items":[{"token":"[REDACTED]"}]}', $body);
     }
 
-    public function test_malformed_json_is_kept_as_is(): void
+    public function testMalformedJsonIsKeptAsIs(): void
     {
         $this->assertSame('{"name": ', $this->sanitizer()->body('{"name": ', 'application/json'));
     }
 
-    public function test_form_bodies_are_redacted(): void
+    public function testFormBodiesAreRedacted(): void
     {
         $body = $this->sanitizer()->body('name=a&password=secret', 'application/x-www-form-urlencoded');
 
         $this->assertSame('{"name":"a","password":"[REDACTED]"}', $body);
     }
 
-    public function test_empty_bodies_become_null(): void
+    public function testEmptyBodiesBecomeNull(): void
     {
         $this->assertNull($this->sanitizer()->body('', 'application/json'));
         $this->assertNull($this->sanitizer()->body(null, null));
     }
 
-    public function test_binary_bodies_are_not_stored(): void
+    public function testBinaryBodiesAreNotStored(): void
     {
         $this->assertSame(
             PayloadSanitizer::BINARY_PLACEHOLDER,
@@ -52,7 +54,7 @@ class PayloadSanitizerTest extends TestCase
         );
     }
 
-    public function test_long_bodies_are_truncated_without_breaking_multibyte_characters(): void
+    public function testLongBodiesAreTruncatedWithoutBreakingMultibyteCharacters(): void
     {
         $body = $this->sanitizer(10)->body(str_repeat('é', 20), 'text/plain');
 

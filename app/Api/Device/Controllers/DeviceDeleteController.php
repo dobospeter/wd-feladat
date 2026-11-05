@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Api\Device\Controllers;
 
+use Illuminate\Http\Response;
 use App\Modules\Device\Handlers\DeviceDeleteHandler;
 use App\Modules\Device\Handlers\Payloads\DeviceDeletePayload;
-use Illuminate\Http\Response;
 
 final class DeviceDeleteController
 {

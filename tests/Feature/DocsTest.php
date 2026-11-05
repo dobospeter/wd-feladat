@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DocsTest extends TestCase
 {
@@ -11,7 +14,7 @@ class DocsTest extends TestCase
         return ['Authorization' => 'Basic ' . base64_encode("{$user}:{$password}")];
     }
 
-    public function test_the_documentation_requires_credentials(): void
+    public function testTheDocumentationRequiresCredentials(): void
     {
         $this->get('/docs')
             ->assertUnauthorized()
@@ -20,14 +23,14 @@ class DocsTest extends TestCase
         $this->get('/docs/openapi.yaml')->assertUnauthorized();
     }
 
-    public function test_wrong_credentials_are_rejected(): void
+    public function testWrongCredentialsAreRejected(): void
     {
         $this->withHeaders($this->basic('docs-user', 'wrong'))->get('/docs')->assertUnauthorized();
         $this->withHeaders($this->basic('wrong', 'docs-pass'))->get('/docs')->assertUnauthorized();
         $this->withHeaders($this->basic('', ''))->get('/docs')->assertUnauthorized();
     }
 
-    public function test_the_interactive_documentation_is_served_with_valid_credentials(): void
+    public function testTheInteractiveDocumentationIsServedWithValidCredentials(): void
     {
         $this->withHeaders($this->basic('docs-user', 'docs-pass'))
             ->get('/docs')
@@ -36,16 +39,19 @@ class DocsTest extends TestCase
             ->assertSee('/docs/openapi.yaml', false);
     }
 
-    public function test_the_openapi_document_is_served_with_valid_credentials(): void
+    public function testTheOpenapiDocumentIsServedWithValidCredentials(): void
     {
         $response = $this->withHeaders($this->basic('docs-user', 'docs-pass'))->get('/docs/openapi.yaml');
 
         $response->assertOk();
-        $this->assertStringContainsString('application/yaml', $response->headers->get('Content-Type'));
-        $this->assertStringStartsWith('openapi: 3.0.3', $response->getFile()->getContent());
+        $this->assertStringContainsString('application/yaml', (string) $response->headers->get('Content-Type'));
+
+        $file = $response->baseResponse;
+        $this->assertInstanceOf(BinaryFileResponse::class, $file);
+        $this->assertStringStartsWith('openapi: 3.0.3', $file->getFile()->getContent());
     }
 
-    public function test_the_documentation_stays_locked_when_no_credentials_are_configured(): void
+    public function testTheDocumentationStaysLockedWhenNoCredentialsAreConfigured(): void
     {
         config(['docs.username' => '', 'docs.password' => '']);
 

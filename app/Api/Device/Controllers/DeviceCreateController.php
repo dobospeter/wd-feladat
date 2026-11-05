@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Api\Device\Controllers;
 
-use App\Api\Device\Requests\DeviceSaveRequest;
-use App\Api\Device\Resources\DeviceResource;
-use App\Modules\Device\Handlers\DeviceCreateHandler;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use App\Api\Device\Resources\DeviceResource;
+use App\Api\Device\Requests\DeviceSaveRequest;
+use App\Modules\Device\Handlers\DeviceCreateHandler;
 
 final class DeviceCreateController
 {

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Api\Device\Requests;
 
+use App\Modules\Device\Models\Device;
+use App\Core\Http\Requests\ApiRequest;
 use App\Modules\Device\Handlers\Payloads\DeviceCreatePayload;
 use App\Modules\Device\Handlers\Payloads\DeviceUpdatePayload;
-use App\Modules\Device\Models\Device;
-use Illuminate\Foundation\Http\FormRequest;
 
-final class DeviceSaveRequest extends FormRequest
+final class DeviceSaveRequest extends ApiRequest
 {
     /**
      * @return array<string, list<string>>
@@ -27,10 +27,10 @@ final class DeviceSaveRequest extends FormRequest
     public function toCreatePayload(): DeviceCreatePayload
     {
         return new DeviceCreatePayload(
-            $this->validated('name'),
-            $this->validated('manufacturer'),
-            $this->validated('model'),
-            $this->validated('description'),
+            $this->requiredString('name'),
+            $this->requiredString('manufacturer'),
+            $this->requiredString('model'),
+            $this->nullableString('description'),
         );
     }
 
@@ -38,10 +38,10 @@ final class DeviceSaveRequest extends FormRequest
     {
         return new DeviceUpdatePayload(
             $id,
-            $this->validated('name'),
-            $this->validated('manufacturer'),
-            $this->validated('model'),
-            $this->validated('description'),
+            $this->requiredString('name'),
+            $this->requiredString('manufacturer'),
+            $this->requiredString('model'),
+            $this->nullableString('description'),
         );
     }
 }

@@ -10,7 +10,7 @@ use App\Modules\Contract\Models\ContractDevice;
 final readonly class ContractDetailsResult
 {
     /**
-     * @param list<ContractDeviceResult> $devices
+     * @param  list<ContractDeviceResult>  $devices
      */
     public function __construct(
         public ContractResult $contract,
@@ -25,9 +25,9 @@ final readonly class ContractDetailsResult
     {
         return new self(
             ContractResult::fromModel($contract),
-            $contract->devices
+            array_values($contract->devices
                 ->map(static fn (ContractDevice $unit): ContractDeviceResult => ContractDeviceResult::fromModel($unit))
-                ->all(),
+                ->all()),
         );
     }
 }

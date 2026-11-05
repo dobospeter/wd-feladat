@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Api\Device\Controllers;
 
-use App\Api\Device\Requests\DeviceSaveRequest;
 use App\Api\Device\Resources\DeviceResource;
+use App\Api\Device\Requests\DeviceSaveRequest;
 use App\Modules\Device\Handlers\DeviceUpdateHandler;
 
 final class DeviceUpdateController

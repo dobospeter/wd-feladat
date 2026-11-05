@@ -9,8 +9,8 @@ use DateTimeImmutable;
 final readonly class ApiExchangePayload
 {
     /**
-     * @param array<string, mixed> $requestHeaders
-     * @param array<string, mixed> $responseHeaders
+     * @param  array<string, mixed>  $requestHeaders
+     * @param  array<string, mixed>  $responseHeaders
      */
     public function __construct(
         public ?string $requestId,

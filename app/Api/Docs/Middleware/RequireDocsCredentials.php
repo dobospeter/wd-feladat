@@ -12,10 +12,10 @@ final class RequireDocsCredentials
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $username = (string) config('docs.username');
-        $password = (string) config('docs.password');
+        $username = config()->string('docs.username');
+        $password = config()->string('docs.password');
 
-        if ($username === '' || $password === '' || !$this->matches($request, $username, $password)) {
+        if ($username === '' || $password === '' || ! $this->matches($request, $username, $password)) {
             return response('Authentication required.', Response::HTTP_UNAUTHORIZED, [
                 'WWW-Authenticate' => 'Basic realm="Asset Register API documentation", charset="UTF-8"',
             ]);

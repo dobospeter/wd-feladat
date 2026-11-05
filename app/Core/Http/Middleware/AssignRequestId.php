@@ -6,8 +6,8 @@ namespace App\Core\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\HttpFoundation\Response;
 
 final class AssignRequestId
 {
@@ -16,15 +16,16 @@ final class AssignRequestId
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->is('api/*')) {
+        if (! $request->is('api/*')) {
             return $next($request);
         }
 
-        $request->attributes->set(self::ATTRIBUTE, $this->resolveId($request));
+        $requestId = $this->resolveId($request);
+        $request->attributes->set(self::ATTRIBUTE, $requestId);
 
         /** @var Response $response */
         $response = $next($request);
-        $response->headers->set(self::HEADER, $request->attributes->get(self::ATTRIBUTE));
+        $response->headers->set(self::HEADER, $requestId);
 
         return $response;
     }

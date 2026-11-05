@@ -10,7 +10,7 @@ final class DocsSpecController
 {
     public function __invoke(): BinaryFileResponse
     {
-        return response()->file((string) config('docs.spec_path'), [
+        return response()->file(config()->string('docs.spec_path'), [
             'Content-Type' => 'application/yaml; charset=UTF-8',
         ]);
     }

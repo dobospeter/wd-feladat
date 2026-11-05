@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Core\Pagination;
 
 /**
- * @template T
+ * @template-covariant T
  */
 final readonly class Page
 {
     /**
-     * @param list<T> $items
+     * @param  list<T>  $items
      */
     public function __construct(
         public array $items,

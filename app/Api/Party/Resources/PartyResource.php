@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Api\Party\Resources;
 
-use App\Modules\Party\Handlers\Results\PartyResult;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Modules\Party\Handlers\Results\PartyResult;
 
 /**
  * @property PartyResult $resource

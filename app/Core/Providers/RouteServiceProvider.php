@@ -16,7 +16,7 @@ final class RouteServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        foreach (glob(app_path('Api/*/Routes/*Routes.php')) as $file) {
+        foreach (glob(app_path('Api/*/Routes/*Routes.php')) ?: [] as $file) {
             if (in_array(basename(dirname($file, 2)), self::DOCUMENTATION_MODULES, true)) {
                 Route::group([], $file);
 

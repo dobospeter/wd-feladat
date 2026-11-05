@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     'max_body_bytes' => (int) env('API_LOG_MAX_BODY_BYTES', 65536),

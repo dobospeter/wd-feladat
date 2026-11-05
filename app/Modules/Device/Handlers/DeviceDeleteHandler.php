@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Device\Handlers;
 
-use App\Modules\Device\Handlers\Payloads\DeviceDeletePayload;
 use App\Modules\Device\Repositories\DeviceRepository;
+use App\Modules\Device\Handlers\Payloads\DeviceDeletePayload;
 
 final readonly class DeviceDeleteHandler
 {

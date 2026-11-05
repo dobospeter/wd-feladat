@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Core\Http;
 
-use Illuminate\Auth\Access\AuthorizationException;
+use Throwable;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use App\Core\Exceptions\BusinessException;
+use App\Core\Exceptions\ConflictException;
+use App\Core\Exceptions\NotFoundException;
 use Illuminate\Auth\AuthenticationException;
+use App\Core\Http\Middleware\AssignRequestId;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use App\Core\Exceptions\ConflictException;
-use App\Core\Exceptions\BusinessException;
-use App\Core\Exceptions\NotFoundException;
-use App\Core\Http\Middleware\AssignRequestId;
-use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Throwable;
+use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface;
 
 final class ApiExceptionRenderer
 {
@@ -125,7 +125,7 @@ final class ApiExceptionRenderer
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param  array<string, string>  $headers
      * @return array<string, string>
      */
     private function safeHeaders(array $headers): array
@@ -134,8 +134,8 @@ final class ApiExceptionRenderer
 
         $safe = [];
         foreach ($headers as $name => $value) {
-            if (in_array(strtolower((string) $name), $allowed, true)) {
-                $safe[$name] = (string) $value;
+            if (in_array(strtolower($name), $allowed, true)) {
+                $safe[$name] = $value;
             }
         }
 

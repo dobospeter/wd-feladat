@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 use Symfony\Component\Uid\Uuid;
 use Tests\Feature\Concerns\CreatesFixtures;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class PartyApiTest extends TestCase
 {
@@ -14,7 +16,7 @@ class PartyApiTest extends TestCase
 
     private const MISSING_ID = '0199c0de-0000-7000-8000-000000000000';
 
-    public function test_a_party_can_be_created(): void
+    public function testAPartyCanBeCreated(): void
     {
         $response = $this->postJson('/api/v1/parties', [
             'name' => 'Happy Gastro Kft.',
@@ -37,7 +39,7 @@ class PartyApiTest extends TestCase
         $this->assertDatabaseHas('parties', ['id' => $id, 'name' => 'Happy Gastro Kft.']);
     }
 
-    public function test_only_the_name_is_required_and_blank_optionals_become_null(): void
+    public function testOnlyTheNameIsRequiredAndBlankOptionalsBecomeNull(): void
     {
         $this->postJson('/api/v1/parties', ['name' => '  Minimal Kft.  ', 'tax_number' => '  ', 'email' => ''])
             ->assertCreated()
@@ -47,7 +49,7 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('data.phone', null);
     }
 
-    public function test_creating_a_party_validates_the_payload(): void
+    public function testCreatingAPartyValidatesThePayload(): void
     {
         $this->postJson('/api/v1/parties', ['email' => 'not-an-email', 'tax_number' => str_repeat('1', 33)])
             ->assertUnprocessable()
@@ -55,7 +57,7 @@ class PartyApiTest extends TestCase
             ->assertJsonStructure(['error' => ['details' => ['name', 'email', 'tax_number']]]);
     }
 
-    public function test_the_tax_number_must_be_unique(): void
+    public function testTheTaxNumberMustBeUnique(): void
     {
         $this->createParty(['tax_number' => '11111111-1-11']);
 
@@ -64,7 +66,7 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('error.code', 'party_already_exists');
     }
 
-    public function test_parties_without_a_tax_number_do_not_conflict(): void
+    public function testPartiesWithoutATaxNumberDoNotConflict(): void
     {
         $this->createParty();
         $this->createParty();
@@ -72,7 +74,7 @@ class PartyApiTest extends TestCase
         $this->assertDatabaseCount('parties', 2);
     }
 
-    public function test_parties_are_listed_by_name_with_pagination_metadata(): void
+    public function testPartiesAreListedByNameWithPaginationMetadata(): void
     {
         $this->createParty(['name' => 'Charlie']);
         $this->createParty(['name' => 'Alpha']);
@@ -85,7 +87,7 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('meta', ['page' => 1, 'per_page' => 2, 'total' => 3, 'last_page' => 2]);
     }
 
-    public function test_a_single_party_can_be_fetched(): void
+    public function testASinglePartyCanBeFetched(): void
     {
         $id = $this->createParty(['name' => 'Fetch me']);
 
@@ -95,14 +97,14 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('data.name', 'Fetch me');
     }
 
-    public function test_an_unknown_party_is_a_404(): void
+    public function testAnUnknownPartyIsA404(): void
     {
         $this->getJson('/api/v1/parties/' . self::MISSING_ID)
             ->assertNotFound()
             ->assertJsonPath('error.code', 'party_not_found');
     }
 
-    public function test_a_party_can_be_replaced(): void
+    public function testAPartyCanBeReplaced(): void
     {
         $id = $this->createParty(['tax_number' => '22222222-2-22']);
 
@@ -115,14 +117,14 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('data.phone', '123');
     }
 
-    public function test_a_party_can_be_saved_without_changing_its_tax_number(): void
+    public function testAPartyCanBeSavedWithoutChangingItsTaxNumber(): void
     {
         $id = $this->createParty(['tax_number' => '33333333-3-33']);
 
         $this->putJson("/api/v1/parties/{$id}", ['name' => 'Same tax', 'tax_number' => '33333333-3-33'])->assertOk();
     }
 
-    public function test_updating_a_party_into_an_existing_tax_number_conflicts(): void
+    public function testUpdatingAPartyIntoAnExistingTaxNumberConflicts(): void
     {
         $this->createParty(['tax_number' => '44444444-4-44']);
         $id = $this->createParty(['tax_number' => '55555555-5-55']);
@@ -132,14 +134,14 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('error.code', 'party_already_exists');
     }
 
-    public function test_updating_an_unknown_party_is_a_404(): void
+    public function testUpdatingAnUnknownPartyIsA404(): void
     {
         $this->putJson('/api/v1/parties/' . self::MISSING_ID, ['name' => 'X'])
             ->assertNotFound()
             ->assertJsonPath('error.code', 'party_not_found');
     }
 
-    public function test_a_party_can_be_deleted(): void
+    public function testAPartyCanBeDeleted(): void
     {
         $id = $this->createParty();
 
@@ -149,7 +151,7 @@ class PartyApiTest extends TestCase
         $this->deleteJson("/api/v1/parties/{$id}")->assertNotFound();
     }
 
-    public function test_a_party_with_contracts_cannot_be_deleted(): void
+    public function testAPartyWithContractsCannotBeDeleted(): void
     {
         $partyId = $this->createParty();
         $contractId = $this->createContract(['party_id' => $partyId]);
@@ -162,7 +164,7 @@ class PartyApiTest extends TestCase
         $this->deleteJson("/api/v1/parties/{$partyId}")->assertNoContent();
     }
 
-    public function test_a_party_can_be_shared_by_many_contracts(): void
+    public function testAPartyCanBeSharedByManyContracts(): void
     {
         $partyId = $this->createParty();
         $this->createContract(['party_id' => $partyId]);

@@ -9,7 +9,7 @@ use App\Modules\ApiLog\Models\ApiLog;
 final class ApiLogRepository
 {
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     public function create(array $attributes): ApiLog
     {
