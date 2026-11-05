@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Party\Models;
 
+use Database\Factories\PartyFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 
 /**
  * @property string $id
@@ -15,8 +18,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
  * @property string|null $email
  * @property string|null $phone
  */
+#[UseFactory(PartyFactory::class)]
 class Party extends Model
 {
+    /** @use HasFactory<PartyFactory> */
+    use HasFactory;
     use HasUuids;
 
     public const NAME_MAX = 255;

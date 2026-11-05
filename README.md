@@ -43,6 +43,19 @@ docker compose exec app vendor/bin/phpstan analyse --memory-limit=1G   # static 
 docker compose down -v                          # stop and drop the database volume
 ```
 
+### Demo data
+
+The stack starts empty (the schema comes from the migrations only). To load the demo data (4 parties, 6 device types,
+5 contracts and 16 placed units, e.g. the same Verifone POS type on three contracts with different serial numbers):
+
+```bash
+docker compose exec app php artisan db:seed --force     # or, without Docker: php artisan db:seed
+SEED_DEMO_DATA=true docker compose up -d                # or seed automatically on start
+```
+
+`DemoDataSeeder` looks every record up by its natural key first, so running it again (or restarting with
+`SEED_DEMO_DATA=true`) never duplicates anything and never touches existing data.
+
 ### Connecting with DBeaver (or any SQL client)
 
 MySQL is published on `127.0.0.1:3306` (localhost only, not reachable from the network).
@@ -188,6 +201,14 @@ app/                                 PSR-4 namespace App\
 * **Race safety**: handlers pre-check for friendly messages; the unique indexes and foreign keys are the final
   authority (a violated unique index is rendered as 409, a blocked device delete as `device_in_use`).
 
+## Factories
+
+`database/factories` has a factory for every model (`Party`, `Device`, `Contract`, `ContractDevice`, `ApiLog`), wired
+in with `#[UseFactory]`. Generated data respects the database rules (unique tax numbers, unique manufacturer + model,
+valid contract periods, one serial number per unit). Handy states: `Party::factory()->minimal()`,
+`Contract::factory()->openEnded()`, `->expired()`, `->withDevices(3)`, `ContractDevice::factory()->for($device)`,
+`ApiLog::factory()->failed()`. `APP_FAKER_LOCALE=hu_HU` (in `.env.example`) makes the data Hungarian.
+
 ## Code quality
 
 | Tool | What | Command | Config |
@@ -216,7 +237,7 @@ Requirements traceability, architecture decisions, delivery phases and the list 
 php artisan test
 ```
 
-98 tests: feature tests for every endpoint and error path, the traffic log (including redaction and failure
+112 tests: feature tests for every endpoint and error path, the traffic log (including redaction and failure
 isolation), Basic auth on the docs, a guard that keeps `docs/openapi.yaml` in sync with the registered routes,
 and unit tests for the domain and the sanitiser. `tests/TestCase.php` refuses to run on anything but in-memory
 SQLite, so the suite can never wipe a real database (not even from inside the compose container, which exports

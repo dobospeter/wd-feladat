@@ -27,6 +27,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-asset_register}
       DB_USERNAME: ${DB_USERNAME:-asset_register}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
       DOCS_USERNAME: ${DOCS_USERNAME:-docs}
       DOCS_PASSWORD: ${DOCS_PASSWORD:-change-me}
     depends_on:

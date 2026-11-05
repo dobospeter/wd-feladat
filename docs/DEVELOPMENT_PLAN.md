@@ -59,7 +59,7 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 | 5 | API traffic log (middleware, sanitiser, repository) | ✅ |
 | 6 | OpenAPI document, Basic-auth docs UI, drift test | ✅ |
 | 7 | Docker: nginx + app + MySQL, healthchecks, migrate on start | ✅ |
-| 8 | Test suite (98 tests), Pint, safety guard against non-SQLite test DB | ✅ |
+| 8 | Test suite (112 tests), Pint, safety guard against non-SQLite test DB | ✅ |
 | 9 | Postman collection (26 requests, 55 assertions), public README page, DBeaver access | ✅ |
 
 ## 5. Quality gates (definition of done)
@@ -68,14 +68,14 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 vendor/bin/pint --test                        # code style
 vendor/bin/phpstan analyse                    # static analysis (Larastan)
 composer check                                # lint + analyse + test in one go
-php artisan test                              # 98 tests
+php artisan test                              # 112 tests
 composer validate --strict
 composer dump-autoload -o --strict-psr        # PSR-4
 composer audit                                # known vulnerabilities
 npx newman run docs/postman/asset-register.postman_collection.json   # against a running stack
 ```
 
-Last run (2026-11-04): all pass. 98 tests / 432 assertions, no known vulnerabilities, 35 Postman requests /
+Last run (2026-11-04): all pass. 112 tests / 630 assertions, no known vulnerabilities, 35 Postman requests /
 76 assertions on MySQL, including from a fresh copy of the repository without `.env` and `vendor/`.
 
 ## 6. Audit - what is still missing
@@ -108,7 +108,7 @@ are about delivery and robustness, not missing functionality.
 | 9 | Expose `created_at` / `updated_at` in responses |
 | 10 | API authentication, rate limiting, CORS - only the documentation is protected today |
 | 11 | Swagger UI is loaded from a CDN, so `/docs` needs internet access in the browser; vendor the assets or switch to an offline renderer |
-| 12 | Demo seeder / factories |
+| 12 | Factories and the demo seeder are done (`database/factories`, `DemoDataSeeder`) |
 | 13 | Container hardening: restart policies, `web` healthcheck, TLS termination, read-only filesystem |
 | 14 | Raise PHPStan above level 6 and drop the ignored identifiers (`argument.type`, `return.type`, ...) from `phpstan.neon`; the `app/` code already passed level 9 without ignores |
 
