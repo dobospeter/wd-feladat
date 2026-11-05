@@ -10,8 +10,11 @@ use App\Modules\Contract\Handlers\ContractUpdateHandler;
 
 final class ContractUpdateController
 {
-    public function __invoke(string $contract, ContractSaveRequest $request, ContractUpdateHandler $handler): ContractDetailsResource
-    {
+    public function __invoke(
+        string $contract,
+        ContractSaveRequest $request,
+        ContractUpdateHandler $handler,
+    ): ContractDetailsResource {
         return new ContractDetailsResource($handler->handle($request->toUpdatePayload($contract)));
     }
 }

@@ -20,7 +20,10 @@ final readonly class PageRequest
         }
 
         if ($perPage < 1 || $perPage > self::MAX_PER_PAGE) {
-            throw new InvalidValueException('per_page', 'The per_page must be between 1 and ' . self::MAX_PER_PAGE . '.');
+            throw new InvalidValueException(
+                'per_page',
+                'The per_page must be between 1 and ' . self::MAX_PER_PAGE . '.',
+            );
         }
     }
 }

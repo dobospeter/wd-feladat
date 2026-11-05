@@ -8,6 +8,14 @@ return [
 
     'redacted_headers' => ['authorization', 'proxy-authorization', 'cookie', 'set-cookie', 'x-api-key'],
 
-    'redacted_fields' => ['password', 'password_confirmation', 'token', 'access_token', 'refresh_token', 'secret', 'api_key'],
+    'redacted_fields' => [
+        'password',
+        'password_confirmation',
+        'token',
+        'access_token',
+        'refresh_token',
+        'secret',
+        'api_key',
+    ],
 
 ];

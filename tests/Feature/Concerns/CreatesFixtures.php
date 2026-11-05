@@ -69,8 +69,11 @@ trait CreatesFixtures
         return $response->json('data.id');
     }
 
-    protected function attachDevice(string $contractId, string $deviceId, string $serialNumber): \Illuminate\Testing\TestResponse
-    {
+    protected function attachDevice(
+        string $contractId,
+        string $deviceId,
+        string $serialNumber,
+    ): \Illuminate\Testing\TestResponse {
         return $this->postJson("/api/v1/contracts/{$contractId}/devices", [
             'device_id' => $deviceId,
             'serial_number' => $serialNumber,

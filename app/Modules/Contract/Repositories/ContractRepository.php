@@ -21,7 +21,10 @@ final class ContractRepository
      */
     public function paginate(PageRequest $request): LengthAwarePaginator
     {
-        return Contract::query()->with('party')->orderBy('id')->paginate(perPage: $request->perPage, page: $request->page);
+        return Contract::query()
+            ->with('party')
+            ->orderBy('id')
+            ->paginate(perPage: $request->perPage, page: $request->page);
     }
 
     /**

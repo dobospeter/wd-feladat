@@ -53,7 +53,9 @@ class DeviceApiTest extends TestCase
         $this->postJson('/api/v1/devices', ['name' => str_repeat('x', 256)])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonStructure(['error' => ['code', 'message', 'details' => ['name', 'manufacturer', 'model'], 'request_id']]);
+            ->assertJsonStructure([
+                'error' => ['code', 'message', 'details' => ['name', 'manufacturer', 'model'], 'request_id'],
+            ]);
     }
 
     public function testTheSameManufacturerAndModelCannotBeRegisteredTwice(): void
@@ -82,7 +84,10 @@ class DeviceApiTest extends TestCase
     {
         $this->getJson('/api/v1/devices')
             ->assertOk()
-            ->assertExactJson(['data' => [], 'meta' => ['page' => 1, 'per_page' => 15, 'total' => 0, 'last_page' => 1]]);
+            ->assertExactJson([
+                'data' => [],
+                'meta' => ['page' => 1, 'per_page' => 15, 'total' => 0, 'last_page' => 1],
+            ]);
     }
 
     public function testPaginationParametersAreValidated(): void

@@ -107,7 +107,10 @@ final class ApiExceptionRenderer
 
         [$code, $message] = match ($status) {
             Response::HTTP_BAD_REQUEST => ['bad_request', 'The request could not be understood.'],
-            Response::HTTP_METHOD_NOT_ALLOWED => ['method_not_allowed', 'The HTTP method is not allowed for this resource.'],
+            Response::HTTP_METHOD_NOT_ALLOWED => [
+                'method_not_allowed',
+                'The HTTP method is not allowed for this resource.',
+            ],
             Response::HTTP_UNSUPPORTED_MEDIA_TYPE => ['unsupported_media_type', 'The media type is not supported.'],
             Response::HTTP_TOO_MANY_REQUESTS => ['too_many_requests', 'Too many requests.'],
             default => [

@@ -21,7 +21,13 @@ abstract readonly class ContractPayload
     }
 
     /**
-     * @return array{contract_number: string, party_id: string, starts_on: string, ends_on: string|null, notes: string|null}
+     * @return array{
+     *     contract_number: string,
+     *     party_id: string,
+     *     starts_on: string,
+     *     ends_on: string|null,
+     *     notes: string|null
+     * }
      */
     public function attributes(): array
     {

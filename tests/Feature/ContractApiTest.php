@@ -207,7 +207,11 @@ class ContractApiTest extends TestCase
             ->assertJsonPath('data.ends_on', null)
             ->assertJsonCount(1, 'data.devices');
 
-        $this->assertDatabaseHas('contracts', ['id' => $contractId, 'contract_number' => 'RENEWED-1', 'party_id' => $newParty]);
+        $this->assertDatabaseHas('contracts', [
+            'id' => $contractId,
+            'contract_number' => 'RENEWED-1',
+            'party_id' => $newParty,
+        ]);
     }
 
     public function testUpdatingAContractValidatesThePeriodAndTheNumber(): void
@@ -220,7 +224,10 @@ class ContractApiTest extends TestCase
         ])->assertConflict()->assertJsonPath('error.code', 'contract_number_already_exists');
 
         $this->putJson("/api/v1/contracts/{$contractId}", [
-            'contract_number' => 'OK', 'party_id' => $this->createParty(), 'starts_on' => '2026-02-01', 'ends_on' => '2026-01-01',
+            'contract_number' => 'OK',
+            'party_id' => $this->createParty(),
+            'starts_on' => '2026-02-01',
+            'ends_on' => '2026-01-01',
         ])->assertUnprocessable()->assertJsonPath('error.code', 'invalid_contract_period');
     }
 

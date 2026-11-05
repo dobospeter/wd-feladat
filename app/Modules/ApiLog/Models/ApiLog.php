@@ -14,6 +14,7 @@ class ApiLog extends Model
 {
     /** @use HasFactory<ApiLogFactory> */
     use HasFactory;
+
     public $timestamps = false;
 
     protected $guarded = [];

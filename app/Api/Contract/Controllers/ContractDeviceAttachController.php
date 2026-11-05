@@ -12,8 +12,11 @@ use App\Modules\Contract\Handlers\ContractDeviceAttachHandler;
 
 final class ContractDeviceAttachController
 {
-    public function __invoke(string $contract, ContractDeviceAttachRequest $request, ContractDeviceAttachHandler $handler): JsonResponse
-    {
+    public function __invoke(
+        string $contract,
+        ContractDeviceAttachRequest $request,
+        ContractDeviceAttachHandler $handler,
+    ): JsonResponse {
         return (new ContractDetailsResource($handler->handle($request->toPayload($contract))))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED)

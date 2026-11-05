@@ -107,7 +107,9 @@ final readonly class PayloadSanitizer
      */
     private function encode(array $data): string
     {
-        return (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR;
+
+        return (string) json_encode($data, $flags);
     }
 
     private function isTextual(string $contentType): bool

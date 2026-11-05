@@ -26,10 +26,16 @@ final readonly class ApiExchangeRecordHandler
             'ip' => $exchange->ip,
             'user_agent' => $exchange->userAgent,
             'request_headers' => $this->sanitizer->headers($exchange->requestHeaders),
-            'request_body' => $this->sanitizer->body($exchange->requestBody, $this->contentType($exchange->requestHeaders)),
+            'request_body' => $this->sanitizer->body(
+                $exchange->requestBody,
+                $this->contentType($exchange->requestHeaders),
+            ),
             'response_status' => $exchange->responseStatus,
             'response_headers' => $this->sanitizer->headers($exchange->responseHeaders),
-            'response_body' => $this->sanitizer->body($exchange->responseBody, $this->contentType($exchange->responseHeaders)),
+            'response_body' => $this->sanitizer->body(
+                $exchange->responseBody,
+                $this->contentType($exchange->responseHeaders),
+            ),
             'duration_ms' => $exchange->durationMs,
             'created_at' => $exchange->occurredAt->format('Y-m-d H:i:s.u'),
         ]);

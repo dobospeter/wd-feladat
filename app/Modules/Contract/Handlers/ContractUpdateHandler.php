@@ -28,6 +28,8 @@ final readonly class ContractUpdateHandler
             throw new ContractNumberAlreadyExistsException($attributes['contract_number']);
         }
 
-        return ContractDetailsResult::fromModel($this->contracts->loadDetails($this->contracts->update($contract, $attributes)));
+        $updated = $this->contracts->update($contract, $attributes);
+
+        return ContractDetailsResult::fromModel($this->contracts->loadDetails($updated));
     }
 }

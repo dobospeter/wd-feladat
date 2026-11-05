@@ -10,7 +10,9 @@ final class SerialNumberAlreadyAssignedException extends ConflictException
 {
     public function __construct(string $deviceId, string $serialNumber)
     {
-        parent::__construct("The unit of device {$deviceId} with serial number '{$serialNumber}' is already placed on a contract.");
+        parent::__construct(
+            "The unit of device {$deviceId} with serial number '{$serialNumber}' is already placed on a contract.",
+        );
     }
 
     public function errorCode(): string

@@ -47,7 +47,8 @@ class ApiTrafficLogTest extends TestCase
         $this->postJson('/api/v1/devices', []);
 
         $this->assertSame([404, 404, 422], DB::table('api_logs')->orderBy('id')->pluck('response_status')->all());
-        $this->assertStringContainsString('device_not_found', DB::table('api_logs')->orderBy('id')->first()->response_body);
+        $first = DB::table('api_logs')->orderBy('id')->first();
+        $this->assertStringContainsString('device_not_found', $first->response_body);
     }
 
     public function testSecretsAreRedactedBeforeTheyAreStored(): void

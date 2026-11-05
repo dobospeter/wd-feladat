@@ -20,7 +20,10 @@ class ContractPeriodTest extends TestCase
 
     public function testAOneDayPeriodIsValidRegardlessOfTheTimeOfDay(): void
     {
-        $period = new ContractPeriod(new DateTimeImmutable('2026-02-01 10:00'), new DateTimeImmutable('2026-02-01 09:00'));
+        $period = new ContractPeriod(
+            new DateTimeImmutable('2026-02-01 10:00'),
+            new DateTimeImmutable('2026-02-01 09:00'),
+        );
 
         $this->assertEquals($period->startsOn, $period->endsOn);
     }

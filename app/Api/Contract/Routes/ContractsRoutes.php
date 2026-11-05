@@ -15,7 +15,9 @@ Route::get('contracts', ContractListController::class)->name('contracts.index');
 Route::post('contracts', ContractCreateController::class)->name('contracts.store');
 Route::get('contracts/{contract}', ContractShowController::class)->whereUuid('contract')->name('contracts.show');
 Route::put('contracts/{contract}', ContractUpdateController::class)->whereUuid('contract')->name('contracts.update');
-Route::delete('contracts/{contract}', ContractDeleteController::class)->whereUuid('contract')->name('contracts.destroy');
+Route::delete('contracts/{contract}', ContractDeleteController::class)
+    ->whereUuid('contract')
+    ->name('contracts.destroy');
 
 Route::post('contracts/{contract}/devices', ContractDeviceAttachController::class)
     ->whereUuid('contract')

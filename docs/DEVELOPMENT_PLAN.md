@@ -27,7 +27,7 @@ Out of scope unless stated otherwise: user management, API authentication, a fro
 | 11 | Supported PHP, ideally 8.5 | `^8.5`, container 8.5.12 | `docker compose exec app php -v` |
 | 12 | MySQL | MySQL 8.4 | full suite of requests run against it |
 | 13 | Clean code (SOLID, DRY), DDD | Api / Modules / Core layers, handlers with payloads and results, shared `PaginatedCollection` | review, see §3 |
-| 14 | PSR-4 and PSR-12 | Pint (`pint.json`, Laravel preset, PSR-12 based) and PHPStan + Larastan, both enforced by the pre-commit hook; `composer dump-autoload --strict-psr` | all clean |
+| 14 | PSR-4 and PSR-12 | Pint (`pint.json`, Laravel preset, PSR-12 based) and PHPStan + Larastan, both enforced by the pre-commit hook; `composer dump-autoload --strict-psr` | PSR-4 clean; PSR-12 clean under PHP_CodeSniffer except one sniff on the 5 migrations (see §10) |
 | 15 | Docker package (`docker-compose.yaml`) | nginx + PHP-FPM app + MySQL, self-contained images | fresh-copy build and run (§6) |
 | 16 | Project can be built from migrations | 4 migrations, applied on container start | fresh MySQL volume; rollback/re-apply round trip |
 
@@ -135,3 +135,21 @@ A contract used to carry a free-text `partner_name`. It now references a **Party
 with its own CRUD at `/api/v1/parties`. Contract responses embed the `party` object in both the list and the detail.
 This is a breaking API change (`partner_name` is gone), made before any release: the migrations were edited in place
 (`parties` is created first), so an existing development database must be recreated (`docker compose down -v`).
+
+
+## 10. Standards audit (2026-11-05)
+
+Checked with independent tools, not just Pint: `composer dump-autoload --strict-psr` (PSR-4), PHP_CodeSniffer
+`--standard=PSR12` (PSR-1/PSR-12) and `jscpd` (duplication).
+
+* **PSR-4:** clean.
+* **PSR-12:** the 42 soft line-length warnings and a missing blank line after a trait `use` were fixed. One finding is
+  left: `PSR12.Classes.AnonClassDeclaration` on the 5 migrations. The cause is the `pint.json` rule
+  `new_with_parentheses.anonymous_class: true`, which rewrites `new class () extends Migration` to `new class()`; PSR-12
+  wants `new class ()` or plain `new class extends Migration`. Named migration classes are not an option (PSR-1 requires a
+  namespace and Laravel cannot load namespaced named migrations). Fix: set `anonymous_class` to `false` in `pint.json`.
+* **DRY:** `jscpd` finds 4% duplicated lines (18 clones of 7 to 11 lines), all CRUD boilerplate repeated across modules.
+  The one real duplicate (three list handlers mapping a paginator) now lives in `Page::fromPaginator()`. Possible next
+  step: a shared base for the Device/Party repositories.
+* **SOLID:** handlers and controllers are single-method; `Modules` never import HTTP or `Api`; `Core` imports neither.
+  Handlers depend on concrete repositories (no interfaces), a deliberate consequence of the module template.

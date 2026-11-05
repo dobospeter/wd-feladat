@@ -23,7 +23,8 @@ class PayloadSanitizerTest extends TestCase
 
     public function testJsonFieldsAreRedactedAtAnyDepth(): void
     {
-        $body = $this->sanitizer()->body('{"user":{"Password":"p","name":"n"},"items":[{"token":"t"}]}', 'application/json');
+        $json = '{"user":{"Password":"p","name":"n"},"items":[{"token":"t"}]}';
+        $body = $this->sanitizer()->body($json, 'application/json');
 
         $this->assertSame('{"user":{"Password":"[REDACTED]","name":"n"},"items":[{"token":"[REDACTED]"}]}', $body);
     }
