@@ -1,12 +1,268 @@
 {
   "info": {
     "name": "Asset Register API",
-    "description": "Every endpoint of the Asset Register API with tests.\n\nRun the whole collection top to bottom (Collection Runner / `newman run`): requests store `deviceId`, `contractId` and `assignmentId` in collection variables and the last step cleans up.\n\nVariables: `baseUrl` (default http://localhost:8080), `docsUser` / `docsPassword` (documentation Basic auth).",
+    "description": "Every endpoint of the Asset Register API with tests.\n\nRun the whole collection top to bottom (Collection Runner / `newman run`): requests store `partyId`, `deviceId`, `contractId` and `assignmentId` in collection variables and the last step cleans up.\n\nVariables: `baseUrl` (default http://localhost:8080), `docsUser` / `docsPassword` (documentation Basic auth).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "1. Devices",
+      "name": "1. Parties",
+      "item": [
+        {
+          "name": "Create party",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Happy Gastro Kft.\",\n  \"tax_number\": \"{{partyTaxNumber}}\",\n  \"address\": \"1051 Budapest, Test utca 1.\",\n  \"email\": \"info@happygastro.hu\",\n  \"phone\": \"+36 1 234 5678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a contracting party (szerződő fél). Only `name` is required; `tax_number` is unique when set. Stores `partyId`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"partyTaxNumber\", String(Date.now()).slice(-8) + \"-2-42\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"X-Request-Id header is present\", () => pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.be.a(\"string\").and.not.empty);",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Location header points to the new party\", () => pm.expect(pm.response.headers.get(\"Location\")).to.include(json.data.id));",
+                  "pm.test(\"Body contains the party\", () => pm.expect(json.data).to.include.keys(\"id\", \"name\", \"tax_number\", \"address\", \"email\", \"phone\"));",
+                  "pm.collectionVariables.set(\"partyId\", json.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create party with the same tax number (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate Kft.\",\n  \"tax_number\": \"{{partyTaxNumber}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Expected failure: the tax number is already taken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope has code \\\"party_already_exists\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"party_already_exists\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List parties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties?page=1&per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Paginated list ordered by name."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Has data array and pagination meta\", () => {",
+                  "  pm.expect(json.data).to.be.an(\"array\");",
+                  "  pm.expect(json.meta).to.include.keys(\"page\", \"per_page\", \"total\", \"last_page\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get party",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties/{{partyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties",
+                "{{partyId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns the requested party\", () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get(\"partyId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update party (PUT, full replacement)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties/{{partyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties",
+                "{{partyId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Happy Gastro Kft. (renamed)\",\n  \"tax_number\": \"{{partyTaxNumber}}\",\n  \"address\": null,\n  \"email\": \"office@happygastro.hu\",\n  \"phone\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Replaces all fields of the party."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Updated\", () => { pm.expect(d.name).to.include(\"renamed\"); pm.expect(d.address).to.be.null; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Devices",
       "item": [
         {
           "name": "Create device",
@@ -211,7 +467,7 @@
       ]
     },
     {
-      "name": "2. Contracts",
+      "name": "3. Contracts",
       "item": [
         {
           "name": "Create contract",
@@ -240,14 +496,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contract_number\": \"{{contractNumber}}\",\n  \"partner_name\": \"Happy Gastro Kft.\",\n  \"starts_on\": \"2026-01-01\",\n  \"ends_on\": \"2026-12-31\",\n  \"notes\": \"Framework contract\"\n}",
+              "raw": "{\n  \"contract_number\": \"{{contractNumber}}\",\n  \"party_id\": \"{{partyId}}\",\n  \"starts_on\": \"2026-01-01\",\n  \"ends_on\": \"2026-12-31\",\n  \"notes\": \"Framework contract\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "Creates a contract. `contract_number` must be unique, `ends_on` is optional (open ended) and must not precede `starts_on`. Stores `contractId`."
+            "description": "Creates a contract for an existing party (`party_id`). `contract_number` must be unique, `ends_on` is optional (open ended) and must not precede `starts_on`. Stores `contractId`."
           },
           "event": [
             {
@@ -269,6 +525,7 @@
                   "",
                   "const json = pm.response.json();",
                   "pm.test(\"Starts without devices\", () => pm.expect(json.data.devices).to.eql([]));",
+                  "pm.test(\"Embeds the party\", () => pm.expect(json.data.party.id).to.eql(pm.collectionVariables.get(\"partyId\")));",
                   "pm.collectionVariables.set(\"contractId\", json.data.id);"
                 ]
               }
@@ -318,7 +575,8 @@
                   "",
                   "const json = pm.response.json();",
                   "pm.test(\"Paginated\", () => pm.expect(json.meta).to.include.keys(\"page\", \"per_page\", \"total\", \"last_page\"));",
-                  "pm.test(\"Items do not contain devices\", () => json.data.forEach(c => pm.expect(c).to.not.have.property(\"devices\")));"
+                  "pm.test(\"Items do not contain devices\", () => json.data.forEach(c => pm.expect(c).to.not.have.property(\"devices\")));",
+                  "pm.test(\"Items embed their party\", () => json.data.forEach(c => pm.expect(c.party).to.include.keys(\"id\", \"name\")));"
                 ]
               }
             }
@@ -389,7 +647,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contract_number\": \"{{contractNumber}}\",\n  \"partner_name\": \"Happy Gastro Kft. (renewed)\",\n  \"starts_on\": \"2026-01-01\",\n  \"ends_on\": null,\n  \"notes\": \"Now open ended\"\n}",
+              "raw": "{\n  \"contract_number\": \"{{contractNumber}}\",\n  \"party_id\": \"{{partyId}}\",\n  \"starts_on\": \"2026-01-01\",\n  \"ends_on\": null,\n  \"notes\": \"Now open ended\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -407,7 +665,7 @@
                   "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
                   "",
                   "const d = pm.response.json().data;",
-                  "pm.test(\"Updated and now open ended\", () => { pm.expect(d.partner_name).to.include(\"renewed\"); pm.expect(d.ends_on).to.be.null; });"
+                  "pm.test(\"Updated and now open ended\", () => { pm.expect(d.notes).to.eql(\"Now open ended\"); pm.expect(d.ends_on).to.be.null; });"
                 ]
               }
             }
@@ -416,7 +674,7 @@
       ]
     },
     {
-      "name": "3. Contract devices",
+      "name": "4. Contract devices",
       "item": [
         {
           "name": "Place device on contract",
@@ -660,6 +918,43 @@
           ]
         },
         {
+          "name": "Delete party while it has contracts (409)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties/{{partyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties",
+                "{{partyId}}"
+              ]
+            },
+            "description": "Expected failure: a party that has contracts cannot be deleted."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Error envelope has code \\\"party_in_use\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"party_in_use\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Take device off contract",
           "request": {
             "method": "DELETE",
@@ -700,7 +995,7 @@
       ]
     },
     {
-      "name": "4. Cleanup (delete)",
+      "name": "5. Cleanup (delete)",
       "item": [
         {
           "name": "Delete contract",
@@ -773,11 +1068,47 @@
               }
             }
           ]
+        },
+        {
+          "name": "Delete party",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties/{{partyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties",
+                "{{partyId}}"
+              ]
+            },
+            "description": "Only possible once the party has no contracts."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "5. Documentation & health",
+      "name": "6. Documentation & health",
       "item": [
         {
           "name": "OpenAPI UI (Swagger)",
@@ -935,7 +1266,7 @@
       ]
     },
     {
-      "name": "6. Error examples",
+      "name": "7. Error examples",
       "item": [
         {
           "name": "Validation error (422)",
@@ -1018,6 +1349,91 @@
                 "exec": [
                   "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
                   "pm.test(\"Error envelope has code \\\"device_not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"device_not_found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown party (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/parties/0199c0de-0000-7000-8000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parties",
+                "0199c0de-0000-7000-8000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error envelope has code \\\"party_not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"party_not_found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contract with an unknown party (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "contracts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contract_number\": \"NO-PARTY\",\n  \"party_id\": \"0199c0de-0000-7000-8000-000000000000\",\n  \"starts_on\": \"2026-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "`party_id` must reference an existing party."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"Error envelope has code \\\"party_not_found\\\"\", () => pm.expect(pm.response.json().error.code).to.eql(\"party_not_found\"));"
                 ]
               }
             }
@@ -1171,7 +1587,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contract_number\": \"BAD-PERIOD\",\n  \"partner_name\": \"Partner\",\n  \"starts_on\": \"2026-06-01\",\n  \"ends_on\": \"2026-01-01\"\n}",
+              "raw": "{\n  \"contract_number\": \"BAD-PERIOD\",\n  \"party_id\": \"{{partyId}}\",\n  \"starts_on\": \"2026-06-01\",\n  \"ends_on\": \"2026-01-01\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1207,6 +1623,14 @@
     {
       "key": "docsPassword",
       "value": "change-me"
+    },
+    {
+      "key": "partyId",
+      "value": ""
+    },
+    {
+      "key": "partyTaxNumber",
+      "value": ""
     },
     {
       "key": "deviceId",

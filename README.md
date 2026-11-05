@@ -1,8 +1,8 @@
 # Asset Register API
 
 REST API for registering **devices**, **contracts** and the devices placed on contracts.
-Built with **Laravel 13**, **PHP 8.5**, **MySQL 8.4**, structured as **DDD** (bounded contexts with
-Domain / Application / Infrastructure / Presentation layers), following PSR-4 and PSR-12.
+Built with **Laravel 13**, **PHP 8.5**, **MySQL 8.4**, structured as **DDD** (an `Api` layer, a `Modules` layer
+and a shared `Core`), following PSR-4 and PSR-12.
 
 ## Quick start (Docker)
 
@@ -68,12 +68,15 @@ Requires PHP 8.5 and a MySQL server: copy `.env.example` to `.env`, point `DB_*`
 ## Domain model
 
 ```
-Device (type)  1 ──< ContractDevice >── 1  Contract
-                     serial_number
+Party 1 ──< Contract 1 ──< ContractDevice >── 1 Device (type)
+                              serial_number
 ```
 
+* A **party** (*szerződő fél*, the contracting party) has a name and an optional tax number (unique when set),
+  address, e-mail and phone. One party can have many contracts.
+
 * A **device** is a device *type* (e.g. Dell Latitude 5440), unique by manufacturer + model.
-* A **contract** has a unique number, a partner, a period (`ends_on` optional) and notes.
+* A **contract** belongs to exactly one party and has a unique number, a period (`ends_on` optional) and notes.
 * The N:N relation is the `contract_devices` table. Each row is one physical **unit**: it carries its own
   **serial number**. The same device type can therefore be on many contracts, and several times on one
   contract, always with different serial numbers.
@@ -82,6 +85,7 @@ Decisions where the brief left room (all enforced in the domain *and* by databas
 
 * A physical unit (`device` + `serial_number`) can be on **one contract only** (`unique(device_id, serial_number)`).
 * A device that is placed on a contract **cannot be deleted** (409 `device_in_use`, FK `RESTRICT`).
+* A party that has contracts **cannot be deleted** (409 `party_in_use`, FK `RESTRICT`).
 * Deleting a contract **releases** its devices (FK `CASCADE`).
 * `PUT` is a full replacement; there is no `PATCH`.
 * A device placed on a contract is identified by an `assignment_id`, returned in the contract's `devices`.
@@ -92,13 +96,18 @@ Base path `/api/v1`. JSON in, JSON out. Identifiers are UUIDv7, dates are `YYYY-
 
 | Method | Path                                      | Description                                  |
 |--------|-------------------------------------------|----------------------------------------------|
+| GET    | `/parties`                                | List contracting parties (`page`, `per_page` ≤ 100) |
+| POST   | `/parties`                                | Create a party                               |
+| GET    | `/parties/{party}`                        | Get a party                                  |
+| PUT    | `/parties/{party}`                        | Replace a party                              |
+| DELETE | `/parties/{party}`                        | Delete a party                               |
 | GET    | `/devices`                                | List devices (`page`, `per_page` ≤ 100)      |
 | POST   | `/devices`                                | Create a device                              |
 | GET    | `/devices/{device}`                       | Get a device                                 |
 | PUT    | `/devices/{device}`                       | Replace a device                             |
 | DELETE | `/devices/{device}`                       | Delete a device                              |
-| GET    | `/contracts`                              | List contracts (**without** devices)         |
-| POST   | `/contracts`                              | Create a contract                            |
+| GET    | `/contracts`                              | List contracts (with their party, **without** devices) |
+| POST   | `/contracts`                              | Create a contract (`party_id` required)      |
 | GET    | `/contracts/{contract}`                   | Get a contract **with** its devices          |
 | PUT    | `/contracts/{contract}`                   | Replace contract data (devices are kept)     |
 | DELETE | `/contracts/{contract}`                   | Delete a contract                            |
@@ -133,9 +142,9 @@ same shape; `code` is stable and machine readable, `details` appears when there 
 
 | Status | Typical codes |
 |--------|---------------|
-| 404 | `not_found`, `device_not_found`, `contract_not_found`, `contract_device_not_found` |
-| 409 | `device_already_exists`, `device_in_use`, `contract_number_already_exists`, `serial_number_already_assigned`, `conflict` |
-| 422 | `validation_failed`, `invalid_contract_period`, `invalid_value`, `device_not_found` (unknown `device_id` in a body) |
+| 404 | `not_found`, `party_not_found`, `device_not_found`, `contract_not_found`, `contract_device_not_found` |
+| 409 | `device_already_exists`, `device_in_use`, `party_already_exists`, `party_in_use`, `contract_number_already_exists`, `serial_number_already_assigned`, `conflict` |
+| 422 | `validation_failed`, `invalid_contract_period`, `invalid_value`, `device_not_found` / `party_not_found` (unknown `device_id` / `party_id` in a body) |
 | 405 / 400 / 5xx | `method_not_allowed`, `bad_request`, `server_error` (never leaks internals) |
 
 ### Traffic log
@@ -150,26 +159,33 @@ sent and can never fail a request.
 ## Architecture
 
 ```
-src/                                 PSR-4 namespace Inventory\
-├── Shared/        kernel: Identifier, Guard, Page, domain exception families, error renderer, request id
-├── Device/        Domain · Application (use cases, DTO) · Infrastructure (Eloquent) · Presentation (HTTP)
-├── Contract/      Contract aggregate (owns its ContractDevice units), same four layers
-├── ApiLog/        traffic log: sanitiser, recorder, repository, middleware
-└── Docs/          Basic-auth protected OpenAPI UI
-bootstrap/providers.php   wires one service provider per context (no application code lives in app/)
+app/                                 PSR-4 namespace App\
+├── Api/                             HTTP layer, one folder per module
+│   ├── Party/     Controllers (one per action) · Requests · Resources · Routes/PartiesRoutes.php
+│   ├── Device/    Controllers · Requests · Resources · Routes/DevicesRoutes.php
+│   ├── Contract/  Controllers · Requests · Resources · Routes/ContractsRoutes.php
+│   ├── ApiLog/    Middleware/LogApiTraffic
+│   └── Docs/      Controllers · Middleware (Basic auth) · Routes · Views   (README page, Swagger UI)
+├── Modules/                         business logic, no HTTP
+│   ├── Party/     Exceptions · Handlers (Payloads, Results) · Models · Repositories
+│   ├── Device/    Exceptions · Handlers (Payloads, Results) · Models · Repositories
+│   ├── Contract/  Exceptions · Handlers (Payloads, Results) · Models · Repositories · ValueObjects
+│   └── ApiLog/    Handlers · Models · Repositories · Support (PayloadSanitizer)
+└── Core/                            shared: Exceptions · Pagination · Http (error renderer, request id) · Providers
 ```
 
-* **Dependencies point inward.** Domain has no Laravel dependency (apart from the `symfony/uid` library);
-  Eloquent models live in Infrastructure and never leave it; repositories are interfaces in the domain.
-* **Contract is an aggregate root**; devices are placed/removed only through `Contract::attachDevice()` /
-  `detachDevice()`. Contract and Device reference each other by id only.
-* **Contexts stay decoupled.** "Is this device still on a contract?" is a port (`DeviceUsageChecker`) declared
-  by Device and implemented by Contract.
-* **Domain errors know no HTTP.** They extend `NotFoundException` / `ConflictException` /
-  `RuleViolationException`; one renderer maps those families to 404 / 409 / 422.
-* **Thin controllers**: FormRequest → DTO → one use-case class → Resource.
-* **Race safety**: use cases pre-check for friendly messages, the unique indexes are the final authority and a
-  violation is rendered as 409.
+* **One handler per use case.** A controller turns the validated request into a `*Payload`, calls the module's
+  `*Handler`, and renders the returned `*Result` through a `Resource`. Handlers never see HTTP; controllers never
+  see Eloquent.
+* **Modules depend downward only**: `Api` → `Modules` → `Core`. `Contract` uses the `Device` module (to check a
+  device exists); `Device` knows nothing about contracts.
+* **Repositories** wrap Eloquent; handlers hold the business rules (uniqueness, serial numbers, contract period).
+* **Business errors know no HTTP.** They extend `NotFoundException` / `ConflictException` /
+  `RuleViolationException` (`Core/Exceptions`); one renderer maps those families to 404 / 409 / 422.
+* **Routes are discovered**: `Core/Providers/RouteServiceProvider` loads `app/Api/*/Routes/*Routes.php`, REST
+  modules under `/api/v1`, `Docs` at the root. A new module needs no wiring.
+* **Race safety**: handlers pre-check for friendly messages; the unique indexes and foreign keys are the final
+  authority (a violated unique index is rendered as 409, a blocked device delete as `device_in_use`).
 
 ## Development plan
 
@@ -182,7 +198,7 @@ Requirements traceability, architecture decisions, delivery phases and the list 
 php artisan test
 ```
 
-81 tests: feature tests for every endpoint and error path, the traffic log (including redaction and failure
+98 tests: feature tests for every endpoint and error path, the traffic log (including redaction and failure
 isolation), Basic auth on the docs, a guard that keeps `docs/openapi.yaml` in sync with the registered routes,
 and unit tests for the domain and the sanitiser. `tests/TestCase.php` refuses to run on anything but in-memory
 SQLite, so the suite can never wipe a real database (not even from inside the compose container, which exports

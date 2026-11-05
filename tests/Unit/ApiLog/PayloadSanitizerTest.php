@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\ApiLog;
 
-use Inventory\ApiLog\Application\PayloadSanitizer;
+use App\Modules\ApiLog\Support\PayloadSanitizer;
 use PHPUnit\Framework\TestCase;
 
 class PayloadSanitizerTest extends TestCase

@@ -28,13 +28,35 @@ trait CreatesFixtures
     /**
      * @param array<string, mixed> $overrides
      */
+    protected function createParty(array $overrides = []): string
+    {
+        $this->sequence++;
+
+        $response = $this->postJson('/api/v1/parties', $overrides + [
+            'name' => "Party {$this->sequence}",
+            'tax_number' => null,
+            'address' => '1051 Budapest, Test utca 1.',
+            'email' => "party{$this->sequence}@example.com",
+            'phone' => '+36 1 234 5678',
+        ]);
+
+        $response->assertCreated();
+
+        return $response->json('data.id');
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
     protected function createContract(array $overrides = []): string
     {
         $this->sequence++;
 
+        $partyId = $overrides['party_id'] ?? $this->createParty();
+
         $response = $this->postJson('/api/v1/contracts', $overrides + [
             'contract_number' => "C-{$this->sequence}",
-            'partner_name' => 'Happy Gastro Kft.',
+            'party_id' => $partyId,
             'starts_on' => '2026-01-01',
             'ends_on' => '2026-12-31',
             'notes' => null,

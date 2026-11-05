@@ -3,14 +3,17 @@ info:
   title: Asset Register API
   version: 1.0.0
   description: |
-    REST API of the asset register: **devices**, **contracts** and the devices placed on contracts.
+    REST API of the asset register: **contracting parties**, **devices**, **contracts** and the devices placed on contracts.
 
     ### Domain model
+    * A **party** is a contracting party (*szerződő fél*): a company or person with a name and optional tax number,
+      address, e-mail and phone. A party can have many contracts.
     * A **device** is a device type of the register (e.g. *Dell Latitude 5440*).
-    * A **contract** holds any number of devices, and the same device type may be on many contracts (N:N).
+    * A **contract** belongs to exactly one party, holds any number of devices, and the same device type may be on many contracts (N:N).
     * Every unit placed on a contract carries its own **serial number**. A physical unit
       (device + serial number) can be placed on one contract only.
     * A device that is placed on a contract cannot be deleted; deleting a contract releases its devices.
+    * A party that has contracts cannot be deleted.
 
     ### Conventions
     * All bodies are JSON (`Content-Type: application/json`). Identifiers are UUIDs, dates are `YYYY-MM-DD`.
@@ -23,10 +26,126 @@ servers:
   - url: /api/v1
     description: This server
 tags:
+  - name: Parties
   - name: Devices
   - name: Contracts
   - name: Contract devices
 paths:
+  /parties:
+    get:
+      tags: [Parties]
+      operationId: listParties
+      summary: List contracting parties
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: A page of parties, ordered by name.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Party' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    post:
+      tags: [Parties]
+      operationId: createParty
+      summary: Create a contracting party
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartyInput' }
+      responses:
+        '201':
+          description: The party was created.
+          headers:
+            Location:
+              description: URL of the new party.
+              schema: { type: string }
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Party' }
+        '409':
+          description: A party with the same tax number already exists (`party_already_exists`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /parties/{party}:
+    parameters:
+      - $ref: '#/components/parameters/PartyId'
+    get:
+      tags: [Parties]
+      operationId: getParty
+      summary: Get a contracting party
+      responses:
+        '200':
+          description: The party.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Party' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Parties]
+      operationId: updateParty
+      summary: Replace a contracting party
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartyInput' }
+      responses:
+        '200':
+          description: The updated party.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/RequestId' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Party' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Another party with the same tax number already exists (`party_already_exists`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [Parties]
+      operationId: deleteParty
+      summary: Delete a contracting party
+      responses:
+        '204':
+          description: The party was deleted.
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The party has contracts (`party_in_use`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /devices:
     get:
       tags: [Devices]
@@ -197,7 +316,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '422':
-          description: Validation failed (`validation_failed`) or the period is invalid (`invalid_contract_period`).
+          description: Validation failed (`validation_failed`), the period is invalid (`invalid_contract_period`) or the party does not exist (`party_not_found`).
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -250,7 +369,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '422':
-          description: Validation failed (`validation_failed`) or the period is invalid (`invalid_contract_period`).
+          description: Validation failed (`validation_failed`), the period is invalid (`invalid_contract_period`) or the party does not exist (`party_not_found`).
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -322,6 +441,11 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 components:
   parameters:
+    PartyId:
+      name: party
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     DeviceId:
       name: device
       in: path
@@ -415,12 +539,32 @@ components:
           properties:
             id: { type: string, format: uuid }
         - $ref: '#/components/schemas/DeviceInput'
-    ContractInput:
+    PartyInput:
       type: object
-      required: [contract_number, partner_name, starts_on]
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 255, example: 'Happy Gastro Kft.' }
+        tax_number:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: Unique when set.
+          example: '12345678-2-42'
+        address: { type: string, maxLength: 500, nullable: true, example: '1051 Budapest, Test utca 1.' }
+        email: { type: string, format: email, maxLength: 255, nullable: true, example: 'info@happygastro.hu' }
+        phone: { type: string, maxLength: 50, nullable: true, example: '+36 1 234 5678' }
+    Party:
+      allOf:
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
+        - $ref: '#/components/schemas/PartyInput'
+    ContractFields:
+      type: object
+      required: [contract_number, starts_on]
       properties:
         contract_number: { type: string, maxLength: 64, example: SZ-2026-001 }
-        partner_name: { type: string, maxLength: 255, example: Happy Gastro Kft. }
         starts_on: { type: string, format: date, example: '2026-01-01' }
         ends_on:
           type: string
@@ -429,13 +573,24 @@ components:
           description: Open ended when empty. Must not precede `starts_on`.
           example: '2026-12-31'
         notes: { type: string, maxLength: 2000, nullable: true }
+    ContractInput:
+      allOf:
+        - $ref: '#/components/schemas/ContractFields'
+        - type: object
+          required: [party_id]
+          properties:
+            party_id:
+              type: string
+              format: uuid
+              description: The contracting party; must exist (`party_not_found` otherwise).
     Contract:
       allOf:
         - type: object
-          required: [id]
+          required: [id, party]
           properties:
             id: { type: string, format: uuid }
-        - $ref: '#/components/schemas/ContractInput'
+            party: { $ref: '#/components/schemas/Party' }
+        - $ref: '#/components/schemas/ContractFields'
     AssignedDevice:
       type: object
       required: [assignment_id, serial_number, device]

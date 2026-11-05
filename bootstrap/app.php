@@ -4,12 +4,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Inventory\ApiLog\Presentation\Http\Middleware\LogApiTraffic;
-use Inventory\Shared\Domain\Exception\DomainException;
-use Inventory\Shared\Presentation\Http\ApiExceptionRenderer;
-use Inventory\Shared\Presentation\Http\Middleware\AssignRequestId;
+use App\Api\ApiLog\Middleware\LogApiTraffic;
+use App\Core\Exceptions\BusinessException;
+use App\Core\Http\ApiExceptionRenderer;
+use App\Core\Http\Middleware\AssignRequestId;
 
-// Routes are registered by the bounded context service providers.
+// Routes are loaded from app/Api/*/Routes by RouteServiceProvider.
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         health: '/up',
@@ -22,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontReport(DomainException::class);
+        $exceptions->dontReport(BusinessException::class);
 
         $exceptions->render(
             static fn (Throwable $e, Request $request) => $request->is('api/*')

@@ -1,13 +1,7 @@
 <?php
 
-use Inventory\ApiLog\Infrastructure\ApiLogServiceProvider;
-use Inventory\Contract\Infrastructure\ContractServiceProvider;
-use Inventory\Device\Infrastructure\DeviceServiceProvider;
-use Inventory\Docs\Infrastructure\DocsServiceProvider;
+use App\Core\Providers\RouteServiceProvider;
 
 return [
-    DeviceServiceProvider::class,
-    ContractServiceProvider::class,
-    ApiLogServiceProvider::class,
-    DocsServiceProvider::class,
+    RouteServiceProvider::class,
 ];

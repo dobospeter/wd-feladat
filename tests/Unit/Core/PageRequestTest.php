@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Unit\Shared;
+namespace Tests\Unit\Core;
 
-use Inventory\Shared\Domain\Exception\InvalidValue;
-use Inventory\Shared\Domain\Pagination\Page;
-use Inventory\Shared\Domain\Pagination\PageRequest;
+use App\Core\Exceptions\InvalidValueException;
+use App\Core\Pagination\Page;
+use App\Core\Pagination\PageRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +21,7 @@ class PageRequestTest extends TestCase
     #[DataProvider('invalidRequests')]
     public function test_invalid_requests_are_rejected(int $page, int $perPage): void
     {
-        $this->expectException(InvalidValue::class);
+        $this->expectException(InvalidValueException::class);
 
         new PageRequest($page, $perPage);
     }

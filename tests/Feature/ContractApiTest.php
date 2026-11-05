@@ -15,9 +15,11 @@ class ContractApiTest extends TestCase
 
     public function test_a_contract_can_be_created(): void
     {
+        $partyId = $this->createParty(['name' => 'Happy Gastro Kft.', 'tax_number' => '12345678-2-42']);
+
         $response = $this->postJson('/api/v1/contracts', [
             'contract_number' => 'SZ-2026-001',
-            'partner_name' => 'Happy Gastro Kft.',
+            'party_id' => $partyId,
             'starts_on' => '2026-01-01',
             'ends_on' => '2026-12-31',
             'notes' => 'Framework contract',
@@ -25,7 +27,9 @@ class ContractApiTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.contract_number', 'SZ-2026-001')
-            ->assertJsonPath('data.partner_name', 'Happy Gastro Kft.')
+            ->assertJsonPath('data.party.id', $partyId)
+            ->assertJsonPath('data.party.name', 'Happy Gastro Kft.')
+            ->assertJsonPath('data.party.tax_number', '12345678-2-42')
             ->assertJsonPath('data.starts_on', '2026-01-01')
             ->assertJsonPath('data.ends_on', '2026-12-31')
             ->assertJsonPath('data.notes', 'Framework contract')
@@ -36,11 +40,71 @@ class ContractApiTest extends TestCase
         $this->assertDatabaseHas('contracts', ['id' => $id, 'contract_number' => 'SZ-2026-001']);
     }
 
+    public function test_text_fields_are_trimmed_and_blank_notes_become_null(): void
+    {
+        $this->postJson('/api/v1/contracts', [
+            'contract_number' => '  C-TRIM  ',
+            'party_id' => $this->createParty(),
+            'starts_on' => '2026-01-01',
+            'notes' => '   ',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.contract_number', 'C-TRIM')
+            ->assertJsonPath('data.notes', null);
+    }
+
+    public function test_a_contract_needs_an_existing_party(): void
+    {
+        $this->postJson('/api/v1/contracts', [
+            'contract_number' => 'NO-PARTY',
+            'party_id' => self::MISSING_ID,
+            'starts_on' => '2026-01-01',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'party_not_found')
+            ->assertJsonStructure(['error' => ['details' => ['party_id']]]);
+
+        $this->assertDatabaseCount('contracts', 0);
+    }
+
+    public function test_updating_a_contract_to_an_unknown_party_is_rejected(): void
+    {
+        $contractId = $this->createContract();
+
+        $this->putJson("/api/v1/contracts/{$contractId}", [
+            'contract_number' => 'X',
+            'party_id' => self::MISSING_ID,
+            'starts_on' => '2026-01-01',
+        ])->assertUnprocessable()->assertJsonPath('error.code', 'party_not_found');
+    }
+
+    public function test_the_party_id_must_be_a_uuid(): void
+    {
+        $this->postJson('/api/v1/contracts', [
+            'contract_number' => 'BAD-PARTY', 'party_id' => 'acme', 'starts_on' => '2026-01-01',
+        ])->assertUnprocessable()->assertJsonStructure(['error' => ['details' => ['party_id']]]);
+    }
+
+    public function test_the_list_and_the_detail_both_embed_the_party(): void
+    {
+        $partyId = $this->createParty(['name' => 'Embedded Kft.']);
+        $contractId = $this->createContract(['party_id' => $partyId]);
+
+        $this->getJson('/api/v1/contracts')
+            ->assertOk()
+            ->assertJsonPath('data.0.party.id', $partyId)
+            ->assertJsonPath('data.0.party.name', 'Embedded Kft.');
+
+        $this->getJson("/api/v1/contracts/{$contractId}")
+            ->assertOk()
+            ->assertJsonPath('data.party.id', $partyId);
+    }
+
     public function test_a_contract_can_be_open_ended(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => 'OPEN-1',
-            'partner_name' => 'Partner',
+            'party_id' => $this->createParty(),
             'starts_on' => '2026-01-01',
         ])->assertCreated()->assertJsonPath('data.ends_on', null);
     }
@@ -50,14 +114,14 @@ class ContractApiTest extends TestCase
         $this->postJson('/api/v1/contracts', ['starts_on' => '01/02/2026', 'ends_on' => 'tomorrow'])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonStructure(['error' => ['details' => ['contract_number', 'partner_name', 'starts_on', 'ends_on']]]);
+            ->assertJsonStructure(['error' => ['details' => ['contract_number', 'party_id', 'starts_on', 'ends_on']]]);
     }
 
     public function test_a_contract_cannot_end_before_it_starts(): void
     {
         $this->postJson('/api/v1/contracts', [
             'contract_number' => 'BAD-1',
-            'partner_name' => 'Partner',
+            'party_id' => $this->createParty(),
             'starts_on' => '2026-06-01',
             'ends_on' => '2026-01-01',
         ])
@@ -73,7 +137,7 @@ class ContractApiTest extends TestCase
         $this->createContract(['contract_number' => 'DUP-1']);
 
         $this->postJson('/api/v1/contracts', [
-            'contract_number' => 'DUP-1', 'partner_name' => 'Partner', 'starts_on' => '2026-01-01',
+            'contract_number' => 'DUP-1', 'party_id' => $this->createParty(), 'starts_on' => '2026-01-01',
         ])->assertConflict()->assertJsonPath('error.code', 'contract_number_already_exists');
     }
 
@@ -125,20 +189,23 @@ class ContractApiTest extends TestCase
     {
         $contractId = $this->createContract();
         $this->attachDevice($contractId, $this->createDevice(), 'SN-1')->assertCreated();
+        $newParty = $this->createParty(['name' => 'New partner']);
 
         $this->putJson("/api/v1/contracts/{$contractId}", [
             'contract_number' => 'RENEWED-1',
-            'partner_name' => 'New partner',
+            'party_id' => $newParty,
             'starts_on' => '2027-01-01',
             'ends_on' => null,
             'notes' => 'Renewed',
         ])
             ->assertOk()
             ->assertJsonPath('data.contract_number', 'RENEWED-1')
+            ->assertJsonPath('data.party.id', $newParty)
+            ->assertJsonPath('data.party.name', 'New partner')
             ->assertJsonPath('data.ends_on', null)
             ->assertJsonCount(1, 'data.devices');
 
-        $this->assertDatabaseHas('contracts', ['id' => $contractId, 'contract_number' => 'RENEWED-1']);
+        $this->assertDatabaseHas('contracts', ['id' => $contractId, 'contract_number' => 'RENEWED-1', 'party_id' => $newParty]);
     }
 
     public function test_updating_a_contract_validates_the_period_and_the_number(): void
@@ -147,18 +214,18 @@ class ContractApiTest extends TestCase
         $contractId = $this->createContract();
 
         $this->putJson("/api/v1/contracts/{$contractId}", [
-            'contract_number' => 'TAKEN', 'partner_name' => 'P', 'starts_on' => '2026-01-01',
+            'contract_number' => 'TAKEN', 'party_id' => $this->createParty(), 'starts_on' => '2026-01-01',
         ])->assertConflict()->assertJsonPath('error.code', 'contract_number_already_exists');
 
         $this->putJson("/api/v1/contracts/{$contractId}", [
-            'contract_number' => 'OK', 'partner_name' => 'P', 'starts_on' => '2026-02-01', 'ends_on' => '2026-01-01',
+            'contract_number' => 'OK', 'party_id' => $this->createParty(), 'starts_on' => '2026-02-01', 'ends_on' => '2026-01-01',
         ])->assertUnprocessable()->assertJsonPath('error.code', 'invalid_contract_period');
     }
 
     public function test_updating_an_unknown_contract_is_a_404(): void
     {
         $this->putJson('/api/v1/contracts/' . self::MISSING_ID, [
-            'contract_number' => 'X', 'partner_name' => 'P', 'starts_on' => '2026-01-01',
+            'contract_number' => 'X', 'party_id' => $this->createParty(), 'starts_on' => '2026-01-01',
         ])->assertNotFound()->assertJsonPath('error.code', 'contract_not_found');
     }
 

@@ -4,9 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Inventory\ApiLog\Domain\ApiLogEntry;
-use Inventory\ApiLog\Domain\ApiLogRepository;
-use RuntimeException;
+use Illuminate\Support\Facades\Schema;
 use Tests\Feature\Concerns\CreatesFixtures;
 use Tests\TestCase;
 
@@ -84,12 +82,7 @@ class ApiTrafficLogTest extends TestCase
 
     public function test_a_failing_log_write_never_breaks_the_api_call(): void
     {
-        $this->app->bind(ApiLogRepository::class, static fn () => new class () implements ApiLogRepository {
-            public function save(ApiLogEntry $entry): void
-            {
-                throw new RuntimeException('log storage is down');
-            }
-        });
+        Schema::drop('api_logs');
 
         $this->getJson('/api/v1/devices')->assertOk();
     }
