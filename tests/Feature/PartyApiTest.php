@@ -6,7 +6,9 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use Symfony\Component\Uid\Uuid;
+use App\Modules\Party\Models\Party;
 use Tests\Feature\Concerns\CreatesFixtures;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class PartyApiTest extends TestCase
@@ -15,6 +17,110 @@ class PartyApiTest extends TestCase
     use RefreshDatabase;
 
     private const string MISSING_ID = '0199c0de-0000-7000-8000-000000000000';
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function validPayloads(): array
+    {
+        return [
+            'only the name' => [['name' => 'Minimal Kft.']],
+            'every field' => [[
+                'name' => 'Full Kft.',
+                'tax_number' => '12345678-2-42',
+                'address' => '1051 Budapest, Test utca 1.',
+                'email' => 'info@example.com',
+                'phone' => '+36 1 234 5678',
+            ]],
+            'explicit nulls' => [[
+                'name' => 'Nulls', 'tax_number' => null, 'address' => null, 'email' => null, 'phone' => null,
+            ]],
+            'blank optionals' => [[
+                'name' => 'Blanks', 'tax_number' => '', 'address' => '  ', 'email' => '', 'phone' => '',
+            ]],
+            'longest name' => [['name' => str_repeat('n', Party::NAME_MAX)]],
+            'longest tax number' => [['name' => 'Tax', 'tax_number' => str_repeat('1', Party::TAX_NUMBER_MAX)]],
+            'longest address' => [['name' => 'Address', 'address' => str_repeat('a', Party::ADDRESS_MAX)]],
+            'longest phone' => [['name' => 'Phone', 'phone' => str_repeat('1', Party::PHONE_MAX)]],
+            'accented name' => [['name' => 'Árvíztűrő Tükörfúrógép Kft.']],
+        ];
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, list<string>}>
+     */
+    public static function invalidPayloads(): array
+    {
+        return [
+            'empty payload' => [[], ['name']],
+            'missing name' => [['tax_number' => '1'], ['name']],
+            'null name' => [['name' => null], ['name']],
+            'empty name' => [['name' => ''], ['name']],
+            'name is not a string' => [['name' => 123], ['name']],
+            'name is an array' => [['name' => ['x']], ['name']],
+            'name too long' => [['name' => str_repeat('n', Party::NAME_MAX + 1)], ['name']],
+            'tax number too long' => [
+                ['name' => 'X', 'tax_number' => str_repeat('1', Party::TAX_NUMBER_MAX + 1)],
+                ['tax_number'],
+            ],
+            'address too long' => [
+                ['name' => 'X', 'address' => str_repeat('a', Party::ADDRESS_MAX + 1)],
+                ['address'],
+            ],
+            'phone too long' => [['name' => 'X', 'phone' => str_repeat('1', Party::PHONE_MAX + 1)], ['phone']],
+            'email without at sign' => [['name' => 'X', 'email' => 'not-an-email'], ['email']],
+            'email without domain' => [['name' => 'X', 'email' => 'user@'], ['email']],
+            'email is not a string' => [['name' => 'X', 'email' => 42], ['email']],
+            'several errors at once' => [
+                ['email' => 'nope', 'tax_number' => str_repeat('1', Party::TAX_NUMBER_MAX + 1)],
+                ['name', 'email', 'tax_number'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    #[DataProvider('validPayloads')]
+    public function testValidPayloadsCreateAParty(array $payload): void
+    {
+        $response = $this->postJson('/api/v1/parties', $payload)->assertCreated();
+
+        $this->assertDatabaseHas('parties', ['id' => $response->json('data.id')]);
+        $this->assertDatabaseCount('parties', 1);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidPayloads')]
+    public function testInvalidPayloadsAreRejected(array $payload, array $invalidFields): void
+    {
+        $response = $this->postJson('/api/v1/parties', $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseCount('parties', 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidPayloads')]
+    public function testInvalidPayloadsAreRejectedOnUpdateToo(array $payload, array $invalidFields): void
+    {
+        $id = $this->createParty(['name' => 'Untouched']);
+
+        $response = $this->putJson("/api/v1/parties/{$id}", $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseHas('parties', ['id' => $id, 'name' => 'Untouched']);
+    }
 
     public function testAPartyCanBeCreated(): void
     {
@@ -47,14 +153,6 @@ class PartyApiTest extends TestCase
             ->assertJsonPath('data.tax_number', null)
             ->assertJsonPath('data.email', null)
             ->assertJsonPath('data.phone', null);
-    }
-
-    public function testCreatingAPartyValidatesThePayload(): void
-    {
-        $this->postJson('/api/v1/parties', ['email' => 'not-an-email', 'tax_number' => str_repeat('1', 33)])
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonStructure(['error' => ['details' => ['name', 'email', 'tax_number']]]);
     }
 
     public function testTheTaxNumberMustBeUnique(): void

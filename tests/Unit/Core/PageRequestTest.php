@@ -15,9 +15,37 @@ class PageRequestTest extends TestCase
     /**
      * @return array<string, array{int, int}>
      */
+    public static function validRequests(): array
+    {
+        return [
+            'defaults' => [1, PageRequest::DEFAULT_PER_PAGE],
+            'smallest values' => [1, 1],
+            'largest per page' => [1, PageRequest::MAX_PER_PAGE],
+            'far away page' => [9999, 10],
+        ];
+    }
+
+    /**
+     * @return array<string, array{int, int}>
+     */
     public static function invalidRequests(): array
     {
-        return ['page zero' => [0, 10], 'per page zero' => [1, 0], 'per page too large' => [1, 101]];
+        return [
+            'page zero' => [0, 10],
+            'negative page' => [-1, 10],
+            'per page zero' => [1, 0],
+            'negative per page' => [1, -5],
+            'per page too large' => [1, PageRequest::MAX_PER_PAGE + 1],
+        ];
+    }
+
+    #[DataProvider('validRequests')]
+    public function testValidRequestsAreAccepted(int $page, int $perPage): void
+    {
+        $request = new PageRequest($page, $perPage);
+
+        $this->assertSame($page, $request->page);
+        $this->assertSame($perPage, $request->perPage);
     }
 
     #[DataProvider('invalidRequests')]

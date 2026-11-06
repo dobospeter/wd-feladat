@@ -5,13 +5,109 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Modules\Device\Models\Device;
 use Tests\Feature\Concerns\CreatesFixtures;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class DeviceApiTest extends TestCase
 {
     use CreatesFixtures;
     use RefreshDatabase;
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function validPayloads(): array
+    {
+        $required = ['name' => 'Latitude', 'manufacturer' => 'Dell', 'model' => '5440'];
+
+        return [
+            'required fields only' => [$required],
+            'every field' => [$required + ['description' => 'Business laptop']],
+            'null description' => [$required + ['description' => null]],
+            'blank description' => [$required + ['description' => '   ']],
+            'longest name' => [['name' => str_repeat('n', Device::NAME_MAX)] + $required],
+            'longest manufacturer' => [['manufacturer' => str_repeat('m', Device::MANUFACTURER_MAX)] + $required],
+            'longest model' => [['model' => str_repeat('x', Device::MODEL_MAX)] + $required],
+            'longest description' => [$required + ['description' => str_repeat('d', Device::DESCRIPTION_MAX)]],
+            'accented text' => [['name' => 'Kávéfőző', 'manufacturer' => 'Jura', 'model' => 'Ő-1']],
+        ];
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, list<string>}>
+     */
+    public static function invalidPayloads(): array
+    {
+        $valid = ['name' => 'Latitude', 'manufacturer' => 'Dell', 'model' => '5440'];
+
+        return [
+            'empty payload' => [[], ['name', 'manufacturer', 'model']],
+            'missing name' => [array_diff_key($valid, ['name' => 1]), ['name']],
+            'missing manufacturer' => [array_diff_key($valid, ['manufacturer' => 1]), ['manufacturer']],
+            'missing model' => [array_diff_key($valid, ['model' => 1]), ['model']],
+            'null name' => [['name' => null] + $valid, ['name']],
+            'empty manufacturer' => [['manufacturer' => ''] + $valid, ['manufacturer']],
+            'model is not a string' => [['model' => 5440] + $valid, ['model']],
+            'name is an array' => [['name' => ['x']] + $valid, ['name']],
+            'name too long' => [['name' => str_repeat('n', Device::NAME_MAX + 1)] + $valid, ['name']],
+            'manufacturer too long' => [
+                ['manufacturer' => str_repeat('m', Device::MANUFACTURER_MAX + 1)] + $valid,
+                ['manufacturer'],
+            ],
+            'model too long' => [['model' => str_repeat('x', Device::MODEL_MAX + 1)] + $valid, ['model']],
+            'description too long' => [
+                ['description' => str_repeat('d', Device::DESCRIPTION_MAX + 1)] + $valid,
+                ['description'],
+            ],
+            'only an overlong name' => [['name' => str_repeat('x', 256)], ['name', 'manufacturer', 'model']],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    #[DataProvider('validPayloads')]
+    public function testValidPayloadsCreateADevice(array $payload): void
+    {
+        $response = $this->postJson('/api/v1/devices', $payload)->assertCreated();
+
+        $this->assertDatabaseHas('devices', ['id' => $response->json('data.id')]);
+        $this->assertDatabaseCount('devices', 1);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidPayloads')]
+    public function testInvalidPayloadsAreRejected(array $payload, array $invalidFields): void
+    {
+        $response = $this->postJson('/api/v1/devices', $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseCount('devices', 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidPayloads')]
+    public function testInvalidPayloadsAreRejectedOnUpdateToo(array $payload, array $invalidFields): void
+    {
+        $id = $this->createDevice(['name' => 'Untouched']);
+
+        $response = $this->putJson("/api/v1/devices/{$id}", $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseHas('devices', ['id' => $id, 'name' => 'Untouched']);
+    }
 
     public function testADeviceCanBeCreated(): void
     {
@@ -48,11 +144,10 @@ class DeviceApiTest extends TestCase
             ->assertJsonPath('data.description', null);
     }
 
-    public function testCreatingADeviceValidatesThePayload(): void
+    public function testValidationErrorsUseTheErrorEnvelope(): void
     {
         $this->postJson('/api/v1/devices', ['name' => str_repeat('x', 256)])
             ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed')
             ->assertJsonStructure([
                 'error' => ['code', 'message', 'details' => ['name', 'manufacturer', 'model'], 'request_id'],
             ]);

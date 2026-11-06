@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Modules\Contract\Models\Contract;
 use Tests\Feature\Concerns\CreatesFixtures;
+use PHPUnit\Framework\Attributes\DataProvider;
+use App\Modules\Contract\Models\ContractDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ContractApiTest extends TestCase
@@ -14,6 +17,179 @@ class ContractApiTest extends TestCase
     use RefreshDatabase;
 
     private const string MISSING_ID = '0199c0de-0000-7000-8000-000000000000';
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function validPayloads(): array
+    {
+        $required = ['contract_number' => 'C-1', 'starts_on' => '2026-01-01'];
+
+        return [
+            'required fields only' => [$required],
+            'every field' => [$required + ['ends_on' => '2026-12-31', 'notes' => 'Yearly service']],
+            'null end date' => [$required + ['ends_on' => null]],
+            'null notes' => [$required + ['notes' => null]],
+            'blank notes' => [$required + ['notes' => '  ']],
+            'ends the day it starts' => [$required + ['ends_on' => '2026-01-01']],
+            'leap day' => [['starts_on' => '2028-02-29'] + $required],
+            'longest number' => [['contract_number' => str_repeat('c', Contract::NUMBER_MAX)] + $required],
+            'longest notes' => [$required + ['notes' => str_repeat('n', Contract::NOTES_MAX)]],
+        ];
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, list<string>}>
+     */
+    public static function invalidPayloads(): array
+    {
+        $valid = ['contract_number' => 'C-1', 'starts_on' => '2026-01-01'];
+
+        return [
+            'missing contract number' => [array_diff_key($valid, ['contract_number' => 1]), ['contract_number']],
+            'missing start date' => [array_diff_key($valid, ['starts_on' => 1]), ['starts_on']],
+            'empty contract number' => [['contract_number' => ''] + $valid, ['contract_number']],
+            'contract number too long' => [
+                ['contract_number' => str_repeat('c', Contract::NUMBER_MAX + 1)] + $valid,
+                ['contract_number'],
+            ],
+            'notes too long' => [['notes' => str_repeat('n', Contract::NOTES_MAX + 1)] + $valid, ['notes']],
+            'party id is not a uuid' => [['party_id' => 'nope'] + $valid, ['party_id']],
+            'party id is an integer' => [['party_id' => 42] + $valid, ['party_id']],
+            'start date in the wrong format' => [['starts_on' => '01/02/2026'] + $valid, ['starts_on']],
+            'start date with a time' => [['starts_on' => '2026-01-01 10:00:00'] + $valid, ['starts_on']],
+            'start date is not a date' => [['starts_on' => 'tomorrow'] + $valid, ['starts_on']],
+            'start date does not exist' => [['starts_on' => '2026-02-30'] + $valid, ['starts_on']],
+            'no leap day in a common year' => [['starts_on' => '2027-02-29'] + $valid, ['starts_on']],
+            'end date in the wrong format' => [['ends_on' => '31.12.2026'] + $valid, ['ends_on']],
+            'end date is not a date' => [['ends_on' => 'tomorrow'] + $valid, ['ends_on']],
+            'null party id' => [['party_id' => null] + $valid, ['party_id']],
+            'several errors at once' => [
+                ['starts_on' => '01/02/2026', 'ends_on' => 'tomorrow'],
+                ['contract_number', 'starts_on', 'ends_on'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function validAttachPayloads(): array
+    {
+        return [
+            'plain serial number' => [['serial_number' => 'SN-1']],
+            'serial number gets trimmed' => [['serial_number' => '  SN-1  ']],
+            'longest serial number' => [['serial_number' => str_repeat('s', ContractDevice::SERIAL_NUMBER_MAX)]],
+            'numeric string' => [['serial_number' => '0012345']],
+        ];
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, list<string>}>
+     */
+    public static function invalidAttachPayloads(): array
+    {
+        return [
+            'empty payload' => [[], ['device_id', 'serial_number']],
+            'missing serial number' => [['device_id' => '0199c0de-0000-7000-8000-000000000001'], ['serial_number']],
+            'missing device id' => [['serial_number' => 'SN-1'], ['device_id']],
+            'device id is not a uuid' => [['device_id' => 'nope', 'serial_number' => 'SN-1'], ['device_id']],
+            'empty serial number' => [
+                ['device_id' => '0199c0de-0000-7000-8000-000000000001', 'serial_number' => ''],
+                ['serial_number'],
+            ],
+            'serial number too long' => [
+                [
+                    'device_id' => '0199c0de-0000-7000-8000-000000000001',
+                    'serial_number' => str_repeat('s', ContractDevice::SERIAL_NUMBER_MAX + 1),
+                ],
+                ['serial_number'],
+            ],
+            'serial number is an array' => [
+                ['device_id' => '0199c0de-0000-7000-8000-000000000001', 'serial_number' => ['SN']],
+                ['serial_number'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    #[DataProvider('validPayloads')]
+    public function testValidPayloadsCreateAContract(array $payload): void
+    {
+        $response = $this->postJson('/api/v1/contracts', $payload + ['party_id' => $this->createParty()])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('contracts', ['id' => $response->json('data.id')]);
+        $this->assertDatabaseCount('contracts', 1);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidPayloads')]
+    public function testInvalidPayloadsAreRejected(array $payload, array $invalidFields): void
+    {
+        $payload += ['party_id' => $this->createParty()];
+
+        $response = $this->postJson('/api/v1/contracts', $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseCount('contracts', 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidPayloads')]
+    public function testInvalidPayloadsAreRejectedOnUpdateToo(array $payload, array $invalidFields): void
+    {
+        $id = $this->createContract(['contract_number' => 'UNTOUCHED']);
+        $payload += ['party_id' => $this->createParty()];
+
+        $response = $this->putJson("/api/v1/contracts/{$id}", $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseHas('contracts', ['id' => $id, 'contract_number' => 'UNTOUCHED']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    #[DataProvider('validAttachPayloads')]
+    public function testValidAttachPayloadsPlaceTheDevice(array $payload): void
+    {
+        $contractId = $this->createContract();
+
+        $this->postJson("/api/v1/contracts/{$contractId}/devices", $payload + ['device_id' => $this->createDevice()])
+            ->assertCreated();
+
+        $this->assertDatabaseCount('contract_devices', 1);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $invalidFields
+     */
+    #[DataProvider('invalidAttachPayloads')]
+    public function testInvalidAttachPayloadsAreRejected(array $payload, array $invalidFields): void
+    {
+        $contractId = $this->createContract();
+
+        $response = $this->postJson("/api/v1/contracts/{$contractId}/devices", $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
+        $this->assertDatabaseCount('contract_devices', 0);
+    }
 
     public function testAContractCanBeCreated(): void
     {
@@ -109,14 +285,6 @@ class ContractApiTest extends TestCase
             'party_id' => $this->createParty(),
             'starts_on' => '2026-01-01',
         ])->assertCreated()->assertJsonPath('data.ends_on', null);
-    }
-
-    public function testCreatingAContractValidatesThePayload(): void
-    {
-        $this->postJson('/api/v1/contracts', ['starts_on' => '01/02/2026', 'ends_on' => 'tomorrow'])
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonStructure(['error' => ['details' => ['contract_number', 'party_id', 'starts_on', 'ends_on']]]);
     }
 
     public function testAContractCannotEndBeforeItStarts(): void
@@ -294,16 +462,6 @@ class ContractApiTest extends TestCase
 
         $this->attachDevice($contractId, $this->createDevice(), 'SN-1')->assertCreated();
         $this->attachDevice($contractId, $this->createDevice(), 'SN-1')->assertCreated();
-    }
-
-    public function testAttachingValidatesThePayload(): void
-    {
-        $contractId = $this->createContract();
-
-        $this->postJson("/api/v1/contracts/{$contractId}/devices", ['device_id' => 'nope'])
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJsonStructure(['error' => ['details' => ['device_id', 'serial_number']]]);
     }
 
     public function testAttachingAnUnknownDeviceIsRejectedAsABusinessError(): void
