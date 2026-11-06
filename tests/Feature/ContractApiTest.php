@@ -118,9 +118,14 @@ class ContractApiTest extends TestCase
     #[DataProvider('validPayloads')]
     public function testValidPayloadsCreateAContract(array $payload): void
     {
-        $response = $this->postJson('/api/v1/contracts', $payload + ['party_id' => $this->createParty()])
-            ->assertCreated();
+        // Arrange
+        $payload += ['party_id' => $this->createParty()];
 
+        // Act
+        $response = $this->postJson('/api/v1/contracts', $payload);
+
+        // Assert
+        $response->assertCreated();
         $this->assertDatabaseHas('contracts', ['id' => $response->json('data.id')]);
         $this->assertDatabaseCount('contracts', 1);
     }
@@ -132,12 +137,14 @@ class ContractApiTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function testInvalidPayloadsAreRejected(array $payload, array $invalidFields): void
     {
+        // Arrange
         $payload += ['party_id' => $this->createParty()];
 
-        $response = $this->postJson('/api/v1/contracts', $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Act
+        $response = $this->postJson('/api/v1/contracts', $payload);
 
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseCount('contracts', 0);
     }
@@ -149,13 +156,15 @@ class ContractApiTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function testInvalidPayloadsAreRejectedOnUpdateToo(array $payload, array $invalidFields): void
     {
+        // Arrange
         $id = $this->createContract(['contract_number' => 'UNTOUCHED']);
         $payload += ['party_id' => $this->createParty()];
 
-        $response = $this->putJson("/api/v1/contracts/{$id}", $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Act
+        $response = $this->putJson("/api/v1/contracts/{$id}", $payload);
 
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseHas('contracts', ['id' => $id, 'contract_number' => 'UNTOUCHED']);
     }
@@ -166,11 +175,15 @@ class ContractApiTest extends TestCase
     #[DataProvider('validAttachPayloads')]
     public function testValidAttachPayloadsPlaceTheDevice(array $payload): void
     {
+        // Arrange
         $contractId = $this->createContract();
+        $payload += ['device_id' => $this->createDevice()];
 
-        $this->postJson("/api/v1/contracts/{$contractId}/devices", $payload + ['device_id' => $this->createDevice()])
-            ->assertCreated();
+        // Act
+        $response = $this->postJson("/api/v1/contracts/{$contractId}/devices", $payload);
 
+        // Assert
+        $response->assertCreated();
         $this->assertDatabaseCount('contract_devices', 1);
     }
 
@@ -181,12 +194,14 @@ class ContractApiTest extends TestCase
     #[DataProvider('invalidAttachPayloads')]
     public function testInvalidAttachPayloadsAreRejected(array $payload, array $invalidFields): void
     {
+        // Arrange
         $contractId = $this->createContract();
 
-        $response = $this->postJson("/api/v1/contracts/{$contractId}/devices", $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Act
+        $response = $this->postJson("/api/v1/contracts/{$contractId}/devices", $payload);
 
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseCount('contract_devices', 0);
     }

@@ -84,8 +84,13 @@ class PartyApiTest extends TestCase
     #[DataProvider('validPayloads')]
     public function testValidPayloadsCreateAParty(array $payload): void
     {
-        $response = $this->postJson('/api/v1/parties', $payload)->assertCreated();
+        // Arrange: the payload comes from the data provider.
 
+        // Act
+        $response = $this->postJson('/api/v1/parties', $payload);
+
+        // Assert
+        $response->assertCreated();
         $this->assertDatabaseHas('parties', ['id' => $response->json('data.id')]);
         $this->assertDatabaseCount('parties', 1);
     }
@@ -97,10 +102,13 @@ class PartyApiTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function testInvalidPayloadsAreRejected(array $payload, array $invalidFields): void
     {
-        $response = $this->postJson('/api/v1/parties', $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Arrange: the payload and the expected invalid fields come from the data provider.
 
+        // Act
+        $response = $this->postJson('/api/v1/parties', $payload);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseCount('parties', 0);
     }
@@ -112,12 +120,14 @@ class PartyApiTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function testInvalidPayloadsAreRejectedOnUpdateToo(array $payload, array $invalidFields): void
     {
+        // Arrange
         $id = $this->createParty(['name' => 'Untouched']);
 
-        $response = $this->putJson("/api/v1/parties/{$id}", $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Act
+        $response = $this->putJson("/api/v1/parties/{$id}", $payload);
 
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseHas('parties', ['id' => $id, 'name' => 'Untouched']);
     }

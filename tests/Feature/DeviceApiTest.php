@@ -71,8 +71,13 @@ class DeviceApiTest extends TestCase
     #[DataProvider('validPayloads')]
     public function testValidPayloadsCreateADevice(array $payload): void
     {
-        $response = $this->postJson('/api/v1/devices', $payload)->assertCreated();
+        // Arrange: the payload comes from the data provider.
 
+        // Act
+        $response = $this->postJson('/api/v1/devices', $payload);
+
+        // Assert
+        $response->assertCreated();
         $this->assertDatabaseHas('devices', ['id' => $response->json('data.id')]);
         $this->assertDatabaseCount('devices', 1);
     }
@@ -84,10 +89,13 @@ class DeviceApiTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function testInvalidPayloadsAreRejected(array $payload, array $invalidFields): void
     {
-        $response = $this->postJson('/api/v1/devices', $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Arrange: the payload and the expected invalid fields come from the data provider.
 
+        // Act
+        $response = $this->postJson('/api/v1/devices', $payload);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseCount('devices', 0);
     }
@@ -99,12 +107,14 @@ class DeviceApiTest extends TestCase
     #[DataProvider('invalidPayloads')]
     public function testInvalidPayloadsAreRejectedOnUpdateToo(array $payload, array $invalidFields): void
     {
+        // Arrange
         $id = $this->createDevice(['name' => 'Untouched']);
 
-        $response = $this->putJson("/api/v1/devices/{$id}", $payload)
-            ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+        // Act
+        $response = $this->putJson("/api/v1/devices/{$id}", $payload);
 
+        // Assert
+        $response->assertUnprocessable()->assertJsonPath('error.code', 'validation_failed');
         $this->assertEqualsCanonicalizing($invalidFields, array_keys($response->json('error.details')));
         $this->assertDatabaseHas('devices', ['id' => $id, 'name' => 'Untouched']);
     }
@@ -146,11 +156,16 @@ class DeviceApiTest extends TestCase
 
     public function testValidationErrorsUseTheErrorEnvelope(): void
     {
-        $this->postJson('/api/v1/devices', ['name' => str_repeat('x', 256)])
-            ->assertUnprocessable()
-            ->assertJsonStructure([
-                'error' => ['code', 'message', 'details' => ['name', 'manufacturer', 'model'], 'request_id'],
-            ]);
+        // Arrange
+        $payload = ['name' => str_repeat('x', Device::NAME_MAX + 1)];
+
+        // Act
+        $response = $this->postJson('/api/v1/devices', $payload);
+
+        // Assert
+        $response->assertUnprocessable()->assertJsonStructure([
+            'error' => ['code', 'message', 'details' => ['name', 'manufacturer', 'model'], 'request_id'],
+        ]);
     }
 
     public function testTheSameManufacturerAndModelCannotBeRegisteredTwice(): void

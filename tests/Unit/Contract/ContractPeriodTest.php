@@ -6,6 +6,7 @@ namespace Tests\Unit\Contract;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use DateMalformedStringException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use App\Modules\Contract\ValueObjects\ContractPeriod;
 use App\Modules\Contract\Exceptions\InvalidContractPeriodException;
@@ -39,34 +40,55 @@ class ContractPeriodTest extends TestCase
         ];
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     #[DataProvider('validPeriods')]
     public function testValidPeriodsAreAccepted(string $startsOn, ?string $endsOn): void
     {
-        $period = new ContractPeriod(
-            new DateTimeImmutable($startsOn),
-            $endsOn === null ? null : new DateTimeImmutable($endsOn),
-        );
+        // Arrange
+        $start = new DateTimeImmutable($startsOn);
+        $end = $endsOn === null ? null : new DateTimeImmutable($endsOn);
 
+        // Act
+        $period = new ContractPeriod($start, $end);
+
+        // Assert
         $this->assertSame('00:00:00', $period->startsOn->format('H:i:s'));
-        $this->assertSame($endsOn === null, $period->endsOn === null);
-        $this->assertSame($endsOn === null ? null : '00:00:00', $period->endsOn?->format('H:i:s'));
+        $this->assertSame($end === null, $period->endsOn === null);
+        $this->assertSame($end === null ? null : '00:00:00', $period->endsOn?->format('H:i:s'));
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     #[DataProvider('invalidPeriods')]
     public function testInvalidPeriodsAreRejected(string $startsOn, string $endsOn): void
     {
+        // Arrange
+        $start = new DateTimeImmutable($startsOn);
+        $end = new DateTimeImmutable($endsOn);
         $this->expectException(InvalidContractPeriodException::class);
 
-        new ContractPeriod(new DateTimeImmutable($startsOn), new DateTimeImmutable($endsOn));
+        // Act
+        new ContractPeriod($start, $end);
+
+        // Assert: the expected exception is verified by PHPUnit.
     }
 
+    /**
+     * @throws DateMalformedStringException
+     */
     public function testAOneDayPeriodStartsAndEndsOnTheSameInstant(): void
     {
-        $period = new ContractPeriod(
-            new DateTimeImmutable('2026-02-01 10:00'),
-            new DateTimeImmutable('2026-02-01 09:00'),
-        );
+        // Arrange
+        $start = new DateTimeImmutable('2026-02-01 10:00');
+        $end = new DateTimeImmutable('2026-02-01 09:00');
 
+        // Act
+        $period = new ContractPeriod($start, $end);
+
+        // Assert
         $this->assertEquals($period->startsOn, $period->endsOn);
     }
 }

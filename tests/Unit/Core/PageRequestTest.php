@@ -42,8 +42,12 @@ class PageRequestTest extends TestCase
     #[DataProvider('validRequests')]
     public function testValidRequestsAreAccepted(int $page, int $perPage): void
     {
+        // Arrange: the page and per-page values come from the data provider.
+
+        // Act
         $request = new PageRequest($page, $perPage);
 
+        // Assert
         $this->assertSame($page, $request->page);
         $this->assertSame($perPage, $request->perPage);
     }
@@ -51,14 +55,27 @@ class PageRequestTest extends TestCase
     #[DataProvider('invalidRequests')]
     public function testInvalidRequestsAreRejected(int $page, int $perPage): void
     {
+        // Arrange
         $this->expectException(InvalidValueException::class);
 
+        // Act
         new PageRequest($page, $perPage);
+
+        // Assert: the expected exception is verified by PHPUnit.
     }
 
     public function testTheLastPageIsAtLeastOne(): void
     {
-        $this->assertSame(1, (new Page([], 0, new PageRequest()))->lastPage());
-        $this->assertSame(3, (new Page([], 21, new PageRequest(1, 10)))->lastPage());
+        // Arrange
+        $emptyPage = new Page([], 0, new PageRequest());
+        $partiallyFilledLastPage = new Page([], 21, new PageRequest(1, 10));
+
+        // Act
+        $emptyLastPage = $emptyPage->lastPage();
+        $filledLastPage = $partiallyFilledLastPage->lastPage();
+
+        // Assert
+        $this->assertSame(1, $emptyLastPage);
+        $this->assertSame(3, $filledLastPage);
     }
 }
